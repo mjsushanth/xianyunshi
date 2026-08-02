@@ -7,16 +7,16 @@
 </style><style>.xc[data-astro-cid-fhnz2zao]{margin:1.7rem 0 1.8rem}.xc-ask[data-astro-cid-fhnz2zao]{margin:0 0 .85rem;padding:.1rem 0 .1rem .85rem;border-left:2px solid color-mix(in srgb,var(--accent) 55%,var(--paper));font-family:var(--serif);font-style:italic;font-size:.9375rem;line-height:1.6;color:color-mix(in srgb,var(--accent) 68%,var(--ink-soft))}.xc-reply[data-astro-cid-fhnz2zao]{padding-left:.85rem}.xc-reply[data-astro-cid-fhnz2zao] p{margin:0 0 .8rem}.xc-reply[data-astro-cid-fhnz2zao] p:last-child{margin-bottom:0}
 </style></head> <body> <div class="wallpaper" style="background-image:url(/xianyunshi/art/glade.jpg)" aria-hidden="true"></div> <div class="starfield" aria-hidden="true"></div> <header class="masthead"> <a class="wordmark" href="/xianyunshi/">xianyun<span>shi</span></a> <nav class="nav"> <a href="/xianyunshi/">notes</a> <a href="/xianyunshi/about">about</a> <a href="/xianyunshi/rss.xml">rss</a> </nav> </header> <main>  <div class="sheet reading" data-astro-cid-gjtny2mx> <figure class="plate band" style="--pw:440px; --pop:0.95; --pbl:normal; --pveil:0.12;" data-astro-cid-j5yaa2ez> <div class="plate-halo" aria-hidden="true" data-astro-cid-j5yaa2ez></div> <div class="plate-frame" data-astro-cid-j5yaa2ez> <img src="/xianyunshi/art/glade.jpg" alt width="440" loading="lazy" decoding="async" data-astro-cid-j5yaa2ez> <div class="plate-veil" aria-hidden="true" data-astro-cid-j5yaa2ez></div> </div>  </figure> <article class="wrap" data-astro-cid-gjtny2mx> <div class="meta" data-astro-cid-gjtny2mx> <span class="dateline" data-astro-cid-gjtny2mx> 30 Jul 2026  </span>  </div> <h1 data-astro-cid-gjtny2mx>a number needs a neighbour</h1> <p class="standfirst" data-astro-cid-gjtny2mx>five times I measured something that refused to hold still, and the only thing that saved me was measuring something else beside it</p>  <div class="topics" data-astro-cid-gjtny2mx> <span class="topics-label" data-astro-cid-gjtny2mx>topics</span> <ul data-astro-cid-gjtny2mx> <li data-astro-cid-gjtny2mx>provider and transport parity</li><li data-astro-cid-gjtny2mx>noise floor comparison</li><li data-astro-cid-gjtny2mx>non-determinism</li><li data-astro-cid-gjtny2mx>floating-point accumulation order</li><li data-astro-cid-gjtny2mx>pre-registered decision rules</li><li data-astro-cid-gjtny2mx>deterministic sampling</li><li data-astro-cid-gjtny2mx>control construction</li><li data-astro-cid-gjtny2mx>rank-based evaluation</li><li data-astro-cid-gjtny2mx>embedding space anisotropy</li><li data-astro-cid-gjtny2mx>null results as results</li><li data-astro-cid-gjtny2mx>provenance labelling</li><li data-astro-cid-gjtny2mx>paired model comparison</li> </ul> </div> <hr class="rule" data-astro-cid-gjtny2mx>  <ol>
 <li>Something as powerful as an embedding model reaches you through two providers, or two modes of transport, and the answers come back differing in the fourth decimal place. How do you measure the impact of that? How do you even tell whether the thing itself has changed?</li>
-<li>Disagreement with the self. Identical text, identical endpoint, identical subject matter, and the output still comes back different — non-determinism turns up far more often than I expected.</li>
+<li>Disagreement with the self. Identical text, identical endpoint, identical subject matter, and the output still comes back different. Non-determinism turns up far more often than I expected.</li>
 <li>A cosine of 0.9998 sounds excellent and means nothing at all until you know what a <em>wrong</em> pairing scores.</li>
-<li>I was working at cent scale — eighty, ninety cents a batch — and my own token estimate still missed the invoice. Once by 1.6%, once by something like 7 to 9%. Probably I need more practice.</li>
+<li>I was working at cent scale, eighty or ninety cents a batch, and my own token estimate still missed the invoice. Once by 1.6%, once by something like 7 to 9%. Probably I need more practice.</li>
 <li>Two models end up as each other’s control group and measurement standard, because there is no absolute scale to put either one on.</li>
 </ol>
 <p>Last time I wrote about one number that was secretly two costs stuck together. This is the
 opposite problem, and I think it happens more often: a number that is secretly nothing, because
 there is nothing anywhere near it to compare it against.</p>
 <h2 id="the-shape-of-it">the shape of it</h2>
-<p>A measurement is a comparison. It always was — we just hide the second half of it when it feels
+<p>A measurement is a comparison. It always was. We just hide the second half of it when it feels
 obvious. And when the thing you are measuring will not repeat itself, the second half stops being
 obvious. <u>If you do not go and build one deliberately, you end up interpreting noise with a
 straight face.</u></p>
@@ -30,8 +30,8 @@ straight face.</u></p>
 <span class="line"><span>      └── &quot;close to 1,    endpoint&#39;s own jitter, so</span></span>
 <span class="line"><span>           looks fine&quot;    there is nothing here</span></span></code></pre>
 <h2 id="the-endpoint-that-would-not-repeat-itself">the endpoint that would not repeat itself</h2>
-<p>I needed the same embedding model through two different transports — a managed cloud endpoint,
-and the vendor’s own API directly. Same model name, same text.</p>
+<p>I needed the same embedding model through two different transports. One a managed cloud
+endpoint, the other the vendor’s own API directly. Same model name, same text.</p>
 <p>Mean cosine between the two came out at <strong>0.99984832</strong>. Which landed, annoyingly, just under a
 threshold I had written down <em>before</em> running anything: at or above 0.9999 means the same vector
 space, 0.99 to 0.9999 means drifting and needs a decision, below 0.99 means a different space
@@ -62,23 +62,23 @@ calls to the same endpoint?</u></p>
 <table><thead><tr><th style="text-align:left">comparison</th><th style="text-align:right">mean difference</th><th style="text-align:right">worst case</th></tr></thead><tbody><tr><td style="text-align:left">different transport</td><td style="text-align:right">1.517e-04</td><td style="text-align:right">2.743e-04</td></tr><tr><td style="text-align:left">same endpoint, called twice</td><td style="text-align:right">2.772e-04</td><td style="text-align:right">2.772e-04</td></tr></tbody></table>
 <p>The cross-transport difference turned out to be no larger than the endpoint’s disagreement with
 itself. Worst cross-transport over worst same-endpoint came to 0.99. So there was no transport
-effect at all — only jitter, and I had very nearly written a paragraph explaining it.</p>
+effect at all, only jitter, and I had very nearly written a paragraph explaining it.</p>
 <p>The control threw up its own surprise while it was at it. Calling one endpoint repeatedly with
 byte-identical text gave <strong>31 of 32 vectors bit-identical, and one that was not</strong>, differing by
 up to 2.891e-03 in a single component. So the endpoint is not deterministic. Probably batch
-composition, kernel selection, floating point accumulation order — I did not chase it. But
+composition, kernel selection, floating point accumulation order. I did not chase it. But
 “identical input, identical output” was an assumption I had been making for free, and it turned
 out to be false.</p>
 <h2 id="what-does-a-wrong-answer-score">what does a wrong answer score?</h2>
 <p>Fine, so the transports agree. Does the difference matter <em>for retrieval</em>, which was the only
-reason I cared in the first place? That needs a different kind of neighbour — not a repeat, but a
-mismatch I create on purpose.</p>
+reason I cared in the first place? That needs a different kind of neighbour, a mismatch I
+create on purpose rather than a repeat.</p>
 <p>Take every text embedded both ways and build the full grid of cosines between one set and the
 other.</p>
 <pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>          stored vectors</span></span>
 <span class="line"><span>          b0   b1   b2   b3</span></span>
-<span class="line"><span>    c0  [  X    ·    ·    ·  ]    X  diagonal  — the signal</span></span>
-<span class="line"><span>    c1  [  ·    X    ·    ·  ]    ·  off-diag  — the control</span></span>
+<span class="line"><span>    c0  [  X    ·    ·    ·  ]    X  diagonal  : the signal</span></span>
+<span class="line"><span>    c1  [  ·    X    ·    ·  ]    ·  off-diag  : the control</span></span>
 <span class="line"><span>    c2  [  ·    ·    X    ·  ]</span></span>
 <span class="line"><span>    c3  [  ·    ·    ·    X  ]</span></span>
 <span class="line"><span></span></span>
@@ -86,13 +86,13 @@ other.</p>
 <span class="line"><span>  all off-diag   every ·                          (full distribution)</span></span>
 <span class="line"><span>  self-retrieval rank    sort a row, ask where X landed</span></span></code></pre>
 <div class="xc" data-astro-cid-fhnz2zao> <p class="xc-ask" data-astro-cid-fhnz2zao>what are these methods really? and what do the min, max and median actually mean here</p> <div class="xc-reply" data-astro-cid-fhnz2zao> <p>They are three ways of building the same control, at three different prices.</p><p>A <strong>derangement</strong> is a permutation where nothing maps to itself. Shift every index by one and you
-get one wrong pairing per row — cheap, and because it is shift-by-one rather than a shuffle, it
+get one wrong pairing per row. Cheap, and because it is shift-by-one rather than a shuffle, it
 needs no random seed and stays reproducible on any machine forever. <strong>All off-diagonals</strong> is the
 exhaustive version: every wrong pairing there is, which buys you a distribution instead of a
 sample. <strong>Self-retrieval rank</strong> sorts each row and asks where the correct match ended up.</p><p>The statistics are doing the actual arguing here. <code>min(diagonal)</code> is your weakest true match.
 <code>max(off-diagonal)</code> is your strongest impostor. <u>If the worst right answer still beats the best
 wrong answer, nothing can confuse them</u>, and that one comparison settles the whole question.
-The <code>median(off-diagonal)</code> earns its place because embedding spaces are anisotropic — everything
+The <code>median(off-diagonal)</code> earns its place because embedding spaces are anisotropic. Everything
 is somewhat similar to everything, so you need to know where “unrelated” actually sits before a
 high number means anything.</p><p>And the rank is the one that really decides it, because retrieval consumes <em>ordering</em>, not
 absolute cosine. A shift of 1.5e-04 is invisible unless it reorders something.</p> </div> </div>
@@ -123,20 +123,20 @@ absolute cosine. A shift of 1.5e-04 is invisible unless it reorders something.</
 <table><thead><tr><th style="text-align:left"></th><th style="text-align:right">min</th><th style="text-align:right">median</th><th style="text-align:right">max</th></tr></thead><tbody><tr><td style="text-align:left">the deliberate mismatches</td><td style="text-align:right">0.0536</td><td style="text-align:right">0.2429</td><td style="text-align:right"><strong>0.6189</strong></td></tr><tr><td style="text-align:left">the matched pairs</td><td style="text-align:right"></td><td style="text-align:right">0.999848</td><td style="text-align:right"></td></tr></tbody></table>
 <p>So a typical wrong pairing scores <strong>0.24</strong>, and the very best wrong pairing in the whole grid
 reaches 0.62. The matched pairs sit at 0.9998. The gap between the worst right answer and the best
-wrong one is <strong>0.38</strong> — enormous, and nothing like the 1.5e-04 I had been worrying about.</p>
+wrong one is <strong>0.38</strong>. Enormous, and nothing like the 1.5e-04 I had been worrying about.</p>
 <p>Then the rank, which is the part that actually decided it: for all <strong>32 of 32</strong> texts, the nearest
 stored vector was its own. Put the two side by side and the difference I was fretting over is
 roughly <strong>five thousand times smaller</strong> than the distance to an unrelated sentence.</p>
 <p><u>A difference that cannot change an outcome does not need to be treated as a difference.</u>
-I have since run into the same idea somewhere completely unrelated — a reranker that only
+I have since run into the same idea somewhere completely unrelated. A reranker that only
 reorders cannot change a concatenated context string, so the reordering is free and only pruning
 does anything. Same shape, different week. It took someone else pointing it out before I noticed
 the two were one idea.</p>
 <h2 id="the-same-text-asked-two-different-ways">the same text, asked two different ways</h2>
-<p>Some embedding models take a parameter telling them what role the text is playing — a query, or a
+<p>Some embedding models take a parameter telling them what role the text is playing, either a query or a
 document to be searched. It is easy to treat that as a formality and pass whatever. I had been
 passing the wrong one for a while, so I wanted to know what it had cost me.</p>
-<p>Ten questions, embedded twice — once in the query role, once in the document role I had been
+<p>Ten questions, embedded twice. Once in the query role, once in the document role I had been
 using by mistake. For each one, the cosine against the correct evidence and against a distractor.
 I wrote the prediction down before running it, which matters more than it sounds like it does,
 because it stops you discovering afterwards that you expected whatever happened.</p>
@@ -161,29 +161,29 @@ because it stops you discovering afterwards that you expected whatever happened.
 
 
 <table><thead><tr><th style="text-align:left"></th><th style="text-align:right">raw cosine to evidence</th><th style="text-align:right">margin over the distractor</th></tr></thead><tbody><tr><td style="text-align:left">query role</td><td style="text-align:right">0.4071</td><td style="text-align:right">0.2169</td></tr><tr><td style="text-align:left">document role (the mistake)</td><td style="text-align:right"><strong>0.4273</strong></td><td style="text-align:right">0.2157</td></tr></tbody></table>
-<p>Read the first column and the wrong role looks <em>better</em> — a higher similarity to the right answer.
+<p>Read the first column and the wrong role looks <em>better</em>, with a higher similarity to the right answer.
 Read the second and there is nothing there at all: the margins differ by 0.0012, and the query role
 won on 5 of 10 questions, which is a coin toss.</p>
 <p>So the prediction was wrong, and the honest write-up is that <u>nothing was established</u>. The
 mistake I had been making for weeks does not appear to have cost me anything measurable on this
-sample. That is a null result, and it counts — a null result you record is a question that stays
+sample. That is a null result, and it counts. A null result you record is a question that stays
 closed, while a null result you bury is one you will re-open in three months.</p>
 <p>It is also the cleanest example in this whole post of a bare number pointing the wrong way. The raw
 cosine had an opinion. It was just an opinion about the wrong thing, because retrieval never sees
-absolute similarity — it only ever sees which candidate scored higher.</p>
+absolute similarity. It only ever sees which candidate scored higher.</p>
 <h2 id="my-guess-against-the-invoice">my guess against the invoice</h2>
-<p>While embedding in bulk I had the run count its own tokens as it went — a BPE tokenizer, running
+<p>While embedding in bulk I had the run count its own tokens as it went, with a BPE tokenizer, running
 estimates, a projected dollar cost updating per batch, live pricing pulled in for the arithmetic.
 Then the invoice arrives and you find out how you did.</p>
 <div class="xc" data-astro-cid-fhnz2zao> <p class="xc-ask" data-astro-cid-fhnz2zao>but the total cost was 0.9 or 0.8 ish $ during every bin-batch ( i had 3 major bins ), so it did not matter much.</p> <div class="xc-reply" data-astro-cid-fhnz2zao> <p>I think that sentence is the most useful thing in the whole exercise and I would not cut it.</p><p>A 10% error on ninety cents is nine cents. You built the instrument, checked it against ground
 truth, found out how far off it runs, and then decided that gap was smaller than anything you
-would act on. That is a finished measurement, including the part people usually skip — deciding
+would act on. That is a finished measurement, including the part people usually skip, which is deciding
 ahead of time what size of error would actually have changed your behaviour.</p><p>The thing that goes wrong is rarely imprecision. It is grinding a number down to three decimal
 places without ever asking what decision the number was for.</p> </div> </div>
 <h2 id="two-models-as-each-others-control">two models as each other’s control</h2>
 <p>The last one is the purest case, because there is no absolute scale to appeal to anywhere.</p>
 <p>Every query the service answered was logged with its tokens, its cost and its wall-clock time. Two
-models had been serving real questions, so the log already held the comparison — I just had to
+models had been serving real questions, so the log already held the comparison. I just had to
 group by model.</p>
 
 
@@ -209,11 +209,11 @@ group by model.</p>
 
 
 <table><thead><tr><th style="text-align:left"></th><th style="text-align:right">queries</th><th style="text-align:right">avg cost</th><th style="text-align:right">avg latency</th></tr></thead><tbody><tr><td style="text-align:left">the small fast model</td><td style="text-align:right">31</td><td style="text-align:right">$0.010797</td><td style="text-align:right">16,592.7 ms</td></tr><tr><td style="text-align:left">the larger model</td><td style="text-align:right">14</td><td style="text-align:right"><strong>$0.027577</strong></td><td style="text-align:right">17,905.2 ms</td></tr></tbody></table>
-<p>On its own, “costs $0.0108 a query” is unreadable — I have no idea whether that is good. Beside its
+<p>On its own, “costs $0.0108 a query” is unreadable. I have no idea whether that is good. Beside its
 neighbour it says something specific and slightly startling: <u>two and a half times the price for
 eight percent more latency.</u> Whatever the extra money is buying there, it is not speed.</p>
 <p>And then the honest part, which is that this table is only two thirds of a measurement. I have the
-cost axis and the latency axis and <strong>no quality axis at all</strong> — no judge scores, no comparison
+cost axis and the latency axis and <strong>no quality axis at all</strong>. No judge scores, no comparison
 against reference answers, nothing. So it cannot yet answer the only question worth asking, which
 is whether the larger model is worth 2.5x. A pair of numbers is better than one number and still
 not the same thing as an answer.</p>
@@ -259,16 +259,16 @@ the traffic rather than the models.</p>
 
 
 
-<table><thead><tr><th style="text-align:left"></th><th style="text-align:left">the bare number</th><th style="text-align:left">the neighbour that gave it meaning</th></tr></thead><tbody><tr><td style="text-align:left">two transports</td><td style="text-align:left">0.99985, “drifting”</td><td style="text-align:left">the same endpoint called twice — 2.772e-04 of jitter</td></tr><tr><td style="text-align:left">does it matter</td><td style="text-align:left">0.9998, “very similar”</td><td style="text-align:left">a wrong pairing scores 0.24, and the right one ranked first 32/32</td></tr><tr><td style="text-align:left">the role parameter</td><td style="text-align:left">0.4273, the higher cosine</td><td style="text-align:left">the margin, 0.0012 apart and 5 of 10 — nothing</td></tr><tr><td style="text-align:left">my cost estimate</td><td style="text-align:left">“about ninety cents”</td><td style="text-align:left">the actual invoice, and a threshold set beforehand</td></tr><tr><td style="text-align:left">two models</td><td style="text-align:left">$0.0108 a query</td><td style="text-align:left">the other model at $0.0276 — and the quality axis I still lack</td></tr></tbody></table>
+<table><thead><tr><th style="text-align:left"></th><th style="text-align:left">the bare number</th><th style="text-align:left">the neighbour that gave it meaning</th></tr></thead><tbody><tr><td style="text-align:left">two transports</td><td style="text-align:left">0.99985, “drifting”</td><td style="text-align:left">the same endpoint called twice, 2.772e-04 of jitter</td></tr><tr><td style="text-align:left">does it matter</td><td style="text-align:left">0.9998, “very similar”</td><td style="text-align:left">a wrong pairing scores 0.24, and the right one ranked first 32/32</td></tr><tr><td style="text-align:left">the role parameter</td><td style="text-align:left">0.4273, the higher cosine</td><td style="text-align:left">the margin, 0.0012 apart and 5 of 10, nothing</td></tr><tr><td style="text-align:left">my cost estimate</td><td style="text-align:left">“about ninety cents”</td><td style="text-align:left">the actual invoice, and a threshold set beforehand</td></tr><tr><td style="text-align:left">two models</td><td style="text-align:left">$0.0108 a query</td><td style="text-align:left">the other model at $0.0276, and the quality axis I still lack</td></tr></tbody></table>
 <p>Those are five fairly different things to be poking at, and the same fix worked on all of them.
 Worth saying that none of the bare numbers were actually wrong. I just could not read them, and
-I have come to think that is the worse problem — a number you suspect makes you go and check it,
+I have come to think that is the worse problem. A number you suspect makes you go and check it,
 while a number you cannot read lets you invent a meaning for it and feel fine about that.</p>
 <p>The rule I took from the earlier post was to split a number that was doing two jobs at once.
 This one is smaller and I suspect I will use it more often. Before you interpret a measurement,
 go and find out what the same instrument says about something whose answer you already know.
 Point it at identical inputs. Point it at deliberately wrong ones. Point it at the invoice.</p>
 <p><u>Every measurement is really a comparison</u>, and its second half is there whether you chose it
-or not. If you do not pick that second half deliberately, it gets picked for you — and in my
+or not. If you do not pick that second half deliberately, it gets picked for you, and in my
 experience it ends up being whatever you were already expecting.</p>
   </article> </div>   </main> <footer class="foot"> <span>xianyunshi &middot; 2026</span> <span>art — trashieart</span> </footer> <div id="mc-layer" aria-hidden="true"></div>   <script type="module" src="/xianyunshi/_astro/MagicCircle.astro_astro_type_script_index_0_lang.DBDaBdws.js"></script> </body></html>

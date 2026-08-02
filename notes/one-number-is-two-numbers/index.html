@@ -31,7 +31,7 @@ opinion, and <u>the opinion turns out to be about the wrong half.</u></p>
 <span class="line"><span>                       one you cannot</span></span></code></pre>
 <p>The left box is accurate. The trouble is that you cannot do anything with it, because it never
 tells you which part of that cost you could have got rid of.</p>
-<h2 id="reading-one--a-process-cannot-see-its-own-peak">reading one — a process cannot see its own peak</h2>
+<h2 id="reading-one-a-process-cannot-see-its-own-peak">reading one: a process cannot see its own peak</h2>
 <p>The question was how much memory the API container actually needed, so it could be given a
 sensible size on a <em>certain platform</em> that bills by declared CPU and memory. A platform that
 has not responded to my support ticket about drastically reduced caps in 28 days. ( &lt;/3 )</p>
@@ -75,18 +75,18 @@ at all without real work to drive it.</p>
 
 <table><thead><tr><th style="text-align:left"></th><th style="text-align:right">idle</th><th style="text-align:right">one simple query</th><th style="text-align:right">one heavy query</th></tr></thead><tbody><tr><td style="text-align:left">api container</td><td style="text-align:right">213 MiB</td><td style="text-align:right">1,139 MiB</td><td style="text-align:right"><strong>1,220 MiB</strong></td></tr><tr><td style="text-align:left">ui container</td><td style="text-align:right">146 MiB</td><td style="text-align:right">146 MiB</td><td style="text-align:right">146 MiB</td></tr></tbody></table>
 <p>Three things fell out of that table, and only one of them was the thing I asked for.</p>
-<p>The size, obviously — 512 MiB was never going to survive. But also: the UI container is
+<p>The size, obviously. 512 MiB was never going to survive. But also: the UI container is
 perfectly flat under load, which is <em>evidence</em> that it is a pure HTTP client and can be given
 almost nothing. And the API container going from 213 to 1,220 MiB means its heavy components are
 built on demand rather than at import, which you cannot learn by reading the code and which
 changes what caching can possibly buy you.</p>
 <p>The honest limit: the sampler polls every one to two seconds, so on a fourteen-second query it
-takes about eight samples. Anything that spikes between samples is invisible — or I do not know
+takes about eight samples. Anything that spikes between samples is invisible, or I do not know
 how to measure it well yet. That peak is a lower bound, which is fine for sizing with headroom
 and useless if you were tuning to the megabyte.</p>
 <p>There is a whole genre of F1 shorts where an apparent cheating scandal turns out to be, on
 inspection, just extremely intelligent engineering. The one I keep thinking about: the FIA
-measures compression ratio with the engine cold. So — the story goes — the teams built pistons
+measures compression ratio with the engine cold. So, the story goes, the teams built pistons
 that grow when hot. Fused 3D-printed layers, hidden channels, thermal expansion tuned to a
 tolerance. The geometry the rules care about only exists at a temperature the inspection never
 sees. Undetectable, by design.</p>
@@ -94,10 +94,10 @@ sees. Undetectable, by design.</p>
 going on underneath, because it is the same thing I keep doing to myself: <u>somebody took a
 perfectly good measurement at the wrong moment.</u> Nothing was broken. The instrument looked
 once, while everything was cold, and what it saw was true and useless.</p>
-<h2 id="reading-two--the-cost-you-only-pay-once">reading two — the cost you only pay once</h2>
+<h2 id="reading-two-the-cost-you-only-pay-once">reading two: the cost you only pay once</h2>
 <p>Next question: how expensive is rebuilding the service’s components on every request?</p>
 <p>It is the casual sys-design basic check, for a novice, I guess. Is it worth caching a
-component’s runtime instance? (There was also a much larger question sitting underneath —
+component’s runtime instance? (There was also a much larger question sitting underneath,
 whether that instance is even <em>safe</em> to share once the backend is spawned a thousand times over,
 served across many requests and users. Thread safety, races, assignment, whether the thing is
 genuinely stateless. So much I never learnt in uni. For another day.)</p>
@@ -150,23 +150,23 @@ passes.</p>
 
 <table><thead><tr><th style="text-align:left">constructor</th><th style="text-align:right">pass 1</th><th style="text-align:right">pass 2</th><th style="text-align:left">what it means</th></tr></thead><tbody><tr><td style="text-align:left"><code>load_config()</code></td><td style="text-align:right">66.8 ms</td><td style="text-align:right">65.2 ms</td><td style="text-align:left">genuinely per-call</td></tr><tr><td style="text-align:left"><code>build_components()</code></td><td style="text-align:right">1076.7 ms</td><td style="text-align:right"><strong>592.2 ms</strong></td><td style="text-align:left">~485 ms was one-time import</td></tr><tr><td style="text-align:left"><code>load_prompts()</code></td><td style="text-align:right">91.5 ms</td><td style="text-align:right">92.4 ms</td><td style="text-align:left">per-call</td></tr><tr><td style="text-align:left"><code>make_client()</code></td><td style="text-align:right">4.0 ms</td><td style="text-align:right">3.8 ms</td><td style="text-align:left">negligible</td></tr><tr><td style="text-align:left"><code>make_logger()</code></td><td style="text-align:right">72.5 ms</td><td style="text-align:right">71.4 ms</td><td style="text-align:left">per-call</td></tr></tbody></table>
 <p>Pass one on its own overstates the recurring cost by about 60%. <u>The steady-state number is
-pass two</u>, and the gap between the passes is itself a fact worth having — it tells you how much
+pass two</u>, and the gap between the passes is itself a fact worth having. It tells you how much
 of a cold start is just Python importing modules.</p>
 <p>There is a trap sitting next to this one. I also captured heap allocations alongside the timings,
 and <code>build_components()</code> reported under 1 MiB. So construction is cheap in memory, which is true.
 I then nearly concluded that a large resident table was being loaded during construction, and the
 heap number said otherwise.</p>
 <p>But a Python heap profiler cannot see native allocations. The ~900 MiB the external sampler saw is
-columnar buffers living outside the Python heap entirely — invisible to that tool by design. Put
+columnar buffers living outside the Python heap entirely, invisible to that tool by design. Put
 the two together and they say something neither says alone:</p>
 <blockquote>
-<p>Construction is cheap. The memory is all in the query work — which is unsurprising, given how
+<p>Construction is cheap. The memory is all in the query work, which is unsurprising, given how
 LLMs work anyway. So caching constructors will save time and will not reduce the container’s
 memory footprint at all.</p>
 </blockquote>
 <p>Neither tool could have told me that by itself. <u>They have different blind spots, and I only
 got the answer by pointing both of them at the same event.</u></p>
-<h2 id="reading-three--a-cache-that-worked-and-still-cost-me">reading three — a cache that worked and still cost me</h2>
+<h2 id="reading-three-a-cache-that-worked-and-still-cost-me">reading three: a cache that worked and still cost me</h2>
 <p>This one started as a straightforward savings question. The service reads its tables through an
 S3 streaming loader, and the loader memoises each table onto the instance it belongs to. So: does
 caching those table reads actually buy anything, and how much?</p>
@@ -223,20 +223,20 @@ trip, a file open, a footer and schema parse, a buffer allocation. Those are rou
 Row count only touches the streaming part, which is sequential and cheap. So the tiny table pays
 almost pure overhead, and the enormous one pays that same overhead plus some inexpensive bytes.</p>
 <p><u>Latency tracks round trips, not volume.</u> What this data does <em>not</em> establish is why that
-particular small table beat the wide one — that would need a file and partition count I never
+particular small table beat the wide one. That would need a file and partition count I never
 measured.</p>
 <p>The second surprise is the one that took me longest.</p>
-<div class="xc" data-astro-cid-fhnz2zao> <p class="xc-ask" data-astro-cid-fhnz2zao>i sure read that 10 times and i feel like i&#39;ll forget it again after 3 days. i still dont get it, why shouldnt per-call get cheaper if im visiting the same table over and over again?</p> <div class="xc-reply" data-astro-cid-fhnz2zao> <p>It does. <code>warm = 0.00 ms</code> is the memo working flawlessly — that is what a perfect cache hit looks
+<div class="xc" data-astro-cid-fhnz2zao> <p class="xc-ask" data-astro-cid-fhnz2zao>i sure read that 10 times and i feel like i&#39;ll forget it again after 3 days. i still dont get it, why shouldnt per-call get cheaper if im visiting the same table over and over again?</p> <div class="xc-reply" data-astro-cid-fhnz2zao> <p>It does. <code>warm = 0.00 ms</code> is the memo working flawlessly. That is what a perfect cache hit looks
 like.</p><p>The memo lives on the loader <em>instance</em>, and a fresh instance is built per request. So it is born
 empty, fills up, does its job, and is thrown away with everything else when the request ends. Two
 questions were tangled in one table: does the cache work, and does it live long enough to matter.
-Only the second one was ever wrong, and it turns out to be a question about lifetime — I had been
+Only the second one was ever wrong, and it turns out to be a question about lifetime. I had been
 answering it as though it were a question about caching.</p><p>The water was never the expensive part. It is the walk to the well. You will make that walk again
 tomorrow, and the day after, and you will go on thinking the problem is the water.</p> </div> </div>
 <p>This one also reversed a recommendation, which is the part I would rather skip and probably
 shouldn’t. I had measured constructor time at 825 ms, reported the avoidable per-request work as
 8.6% of a query, and said caching was not worth doing. The discarded table loads are another
-873 ms. Together that is roughly <strong>1,698 ms of a 9.6-second query — about 17.7%</strong>. Measuring the
+873 ms. Together that is roughly <strong>1,698 ms of a 9.6-second query, about 17.7%</strong>. Measuring the
 second half inverted the advice I had already given.</p>
 <h2 id="what-the-three-have-in-common">what the three have in common</h2>
 
@@ -267,7 +267,7 @@ second half inverted the advice I had already given.</p>
 <table><thead><tr><th style="text-align:left"></th><th style="text-align:left">one reading says</th><th style="text-align:left">the second reading says</th></tr></thead><tbody><tr><td style="text-align:left">memory</td><td style="text-align:left">“the process is fine”</td><td style="text-align:left">213 MiB idle, 1,220 MiB under load</td></tr><tr><td style="text-align:left">construction</td><td style="text-align:left">“1,076 ms, expensive”</td><td style="text-align:left">485 ms once, 592 ms always</td></tr><tr><td style="text-align:left">the cache</td><td style="text-align:left">“477 ms, cache is broken”</td><td style="text-align:left">cache is perfect, its lifetime is wrong</td></tr></tbody></table>
 <p>Every row there is the same mistake wearing different clothes. One number was quietly describing
 two costs that had different lifetimes, and the decision I actually needed only showed up once
-those two were pulled apart — which meant moving the observer outside the process in one case,
+those two were pulled apart. That meant moving the observer outside the process in one case,
 running the same code twice in another, and in the third asking about lifetime when I had been
 asking about logic.</p>
 <p>There is a sting in the last one worth naming. Hoisting that loader to application scope so it
