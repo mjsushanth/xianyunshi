@@ -1,0 +1,273 @@
+<!DOCTYPE html><!--
+  The per-post accent MUST ride on an inline style attribute here. A `<style>:root{...}</style>`
+  block in head loses the cascade to global.css (same specificity, and Astro's stylesheet link
+  lands later), which silently left every page on the default accent.
+--><html lang="en" style="--accent:#096D7E;"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>the reranker that made it worse — xianyunshi</title><meta name="description" content="a cross-encoder and BM25 both went into a real financial-filing RAG system, and the project's own investigation found the reranker made results worse, for reasons that turned out to be about pruning, not the model"><link rel="alternate" type="application/rss+xml" title="xianyunshi" href="/xianyunshi/rss.xml"><link rel="icon" href="/xianyunshi/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/xianyunshi/favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="/xianyunshi/favicon-16.png"><link rel="apple-touch-icon" href="/xianyunshi/apple-touch-icon.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400;1,6..72,600&family=Inter:wght@400;500&display=swap"><link rel="stylesheet" href="/xianyunshi/_astro/BaseLayout.C9kYIoYU.css"><style>.plate[data-astro-cid-j5yaa2ez]{position:relative;margin:1.5rem auto 2rem;width:min(var(--pw),100%);padding:0}.plate-halo[data-astro-cid-j5yaa2ez]{position:absolute;inset:-20px -24px -28px;background-image:radial-gradient(circle at 22% 30%,rgba(64,108,152,.3) 1.1px,transparent 1.8px),radial-gradient(circle at 71% 62%,rgba(64,108,152,.24) .9px,transparent 1.6px),radial-gradient(circle at 48% 84%,rgba(168,136,106,.22) .9px,transparent 1.6px),radial-gradient(circle at 86% 18%,rgba(64,108,152,.2) .8px,transparent 1.5px);background-size:46px 46px,37px 41px,46px 46px,37px 41px;-webkit-mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,transparent 42%,#000 100%);mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,transparent 42%,#000 100%);pointer-events:none}.plate-frame[data-astro-cid-j5yaa2ez]{position:relative;overflow:hidden;border-radius:3px}.plate[data-astro-cid-j5yaa2ez] img[data-astro-cid-j5yaa2ez]{display:block;width:100%;height:auto;opacity:var(--pop);mix-blend-mode:var(--pbl);transform:scale(1);transition:transform .62s cubic-bezier(.2,.7,.2,1);will-change:transform;-webkit-mask-image:radial-gradient(ellipse 84% 88% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 84% 88% at 50% 50%,#000 52%,transparent 100%)}.plate-veil[data-astro-cid-j5yaa2ez]{position:absolute;inset:0;background:linear-gradient(168deg,rgba(251,250,246,calc(var(--pveil) * .5)),rgba(251,250,246,var(--pveil)) 55%,rgba(251,250,246,calc(var(--pveil) * 1.5)));opacity:1;transition:opacity .62s ease;pointer-events:none}.plate[data-astro-cid-j5yaa2ez]:hover img[data-astro-cid-j5yaa2ez]{transform:scale(1.035)}.plate[data-astro-cid-j5yaa2ez]:hover .plate-veil[data-astro-cid-j5yaa2ez]{opacity:0}.plate[data-astro-cid-j5yaa2ez].band{width:min(46rem,100%);margin:1rem auto 1.9rem}.plate[data-astro-cid-j5yaa2ez].band img[data-astro-cid-j5yaa2ez]{aspect-ratio:21 / 8;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 94% 104% at 50% 34%,#000 56%,transparent 100%);mask-image:radial-gradient(ellipse 94% 104% at 50% 34%,#000 56%,transparent 100%)}figcaption[data-astro-cid-j5yaa2ez]{position:relative;margin-top:.55rem;text-align:right;font-family:var(--sans);font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}@media(max-width:700px){.plate-halo[data-astro-cid-j5yaa2ez]{inset:-14px 0 -18px}}@media(prefers-reduced-motion:reduce){.plate[data-astro-cid-j5yaa2ez] img[data-astro-cid-j5yaa2ez],.plate-veil[data-astro-cid-j5yaa2ez]{transition:none}.plate[data-astro-cid-j5yaa2ez]:hover img[data-astro-cid-j5yaa2ez]{transform:scale(1)}}
+.topics[data-astro-cid-gjtny2mx]{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .75rem;margin:-.4rem 0 1.5rem}.topics-label[data-astro-cid-gjtny2mx]{font-family:var(--sans);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);flex:none}.topics[data-astro-cid-gjtny2mx] ul[data-astro-cid-gjtny2mx]{display:flex;flex-wrap:wrap;gap:.34rem .4rem;list-style:none;margin:0;padding:0}.topics[data-astro-cid-gjtny2mx] li[data-astro-cid-gjtny2mx]{font-family:var(--sans);font-size:.7rem;line-height:1.35;letter-spacing:.015em;color:color-mix(in srgb,var(--accent) 78%,var(--ink-body));background:color-mix(in srgb,var(--accent) 6%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:3px;padding:.14rem .44rem;white-space:nowrap}@media(max-width:520px){.topics[data-astro-cid-gjtny2mx] li[data-astro-cid-gjtny2mx]{white-space:normal}}
+</style></head> <body> <div class="wallpaper" style="background-image:url(/xianyunshi/art/sootcase.jpg)" aria-hidden="true"></div> <div class="starfield" aria-hidden="true"></div> <header class="masthead"> <a class="wordmark" href="/xianyunshi/">xianyun<span>shi</span></a> <nav class="nav"> <a href="/xianyunshi/">notes</a> <a href="/xianyunshi/about">about</a> <a href="/xianyunshi/rss.xml">rss</a> </nav> </header> <main>  <div class="sheet reading" data-astro-cid-gjtny2mx> <figure class="plate band" style="--pw:440px; --pop:0.95; --pbl:normal; --pveil:0.26;" data-astro-cid-j5yaa2ez> <div class="plate-halo" aria-hidden="true" data-astro-cid-j5yaa2ez></div> <div class="plate-frame" data-astro-cid-j5yaa2ez> <img src="/xianyunshi/art/sootcase.jpg" alt width="440" loading="lazy" decoding="async" data-astro-cid-j5yaa2ez> <div class="plate-veil" aria-hidden="true" data-astro-cid-j5yaa2ez></div> </div>  </figure> <article class="wrap" data-astro-cid-gjtny2mx> <div class="meta" data-astro-cid-gjtny2mx> <span class="dateline" data-astro-cid-gjtny2mx> 4 Aug 2026  </span>  </div> <h1 data-astro-cid-gjtny2mx>the reranker that made it worse</h1> <p class="standfirst" data-astro-cid-gjtny2mx>a cross-encoder and BM25 both went into a real financial-filing RAG system, and the project&#39;s own investigation found the reranker made results worse, for reasons that turned out to be about pruning, not the model</p>  <div class="topics" data-astro-cid-gjtny2mx> <span class="topics-label" data-astro-cid-gjtny2mx>topics</span> <ul data-astro-cid-gjtny2mx> <li data-astro-cid-gjtny2mx>cross-encoder length bias</li><li data-astro-cid-gjtny2mx>document-order context assembly</li><li data-astro-cid-gjtny2mx>pruning versus reordering</li><li data-astro-cid-gjtny2mx>fiscal-year metadata blindness</li><li data-astro-cid-gjtny2mx>retrieval ceiling</li><li data-astro-cid-gjtny2mx>hand-judged answer quality</li><li data-astro-cid-gjtny2mx>automated metric validity</li><li data-astro-cid-gjtny2mx>statistical power at small n</li><li data-astro-cid-gjtny2mx>lexical overlap versus length bias</li><li data-astro-cid-gjtny2mx>reranker input design</li> </ul> </div> <hr class="rule" data-astro-cid-gjtny2mx>  <ol>
+<li>A cross-encoder reranker went into a real financial-filing RAG system. The project’s own
+investigation, alongside a look at what BM25 would have done, found it did not help and made
+the actual answers worse.</li>
+<li>The obvious fix, reorder the context so the model reads the right part first, cannot work
+here: a fixed sorting step always re-sorts everything back into document order.</li>
+<li>It is the cross-encoder’s scoring that is metadata-blind, not the underlying filings. Those
+filings carry year, section, and company fields throughout. The scoring model is simply never
+shown them.</li>
+<li>A separate published study reranked a similar set of filings and found reranking helped, which
+is the counterexample this post has to answer rather than set aside.</li>
+<li>The reranker’s own ranking ability held up under independent checking. The harm traces to the
+pruning policy, and pruning cannot be separated from reranking, because pruning is the only
+part of it that changes anything at all.</li>
+</ol>
+<p>The system behind this post answers questions over a large set of financial regulatory filings,
+broken down into individual sentences and spanning many companies and years. This set of filings
+is referred to below as the corpus. Any system built this way has to solve a problem that has
+nothing to do with any particular model: pull the right fragments out of that data, from
+whichever filings and years are relevant, and arrange them into one block of text before a model
+ever reads it. This project built its own custom components to do that job. This post is about
+what happened when one more custom component, a reranker meant to sort those fragments by
+relevance before the model sees them, was added into that chain.</p>
+<p>This shape appeared once before, in an earlier post about embeddings: a reranker that only
+reorders cannot change a concatenated context string, so reordering is free and only pruning does
+anything. That observation was borrowed from an outside source at the time. Here the reranker,
+the corpus, and the result all belong to this project, so the claim needed direct verification
+rather than another borrowing.</p>
+<h2 id="what-a-reranker-actually-does">what a reranker actually does</h2>
+<p>A reranker looks like it does one job, put the best evidence first. It actually does two: score
+everything, then decide what survives. Whether the first job matters at all depends on whether
+anything downstream still cares about order once the scoring is done.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span> score every block          pick survivors (top N)</span></span>
+<span class="line"><span>      |                            |</span></span>
+<span class="line"><span>      v                            v</span></span>
+<span class="line"><span> relevance 0..1            a fixed step re-sorts</span></span>
+<span class="line"><span>                            back to document order</span></span>
+<span class="line"><span>                                    |</span></span>
+<span class="line"><span>                                    v</span></span>
+<span class="line"><span>                     only the SURVIVING SET changes</span></span>
+<span class="line"><span>                     the string the model actually reads</span></span></code></pre>
+<h2 id="a-custom-built-sort-step-already-settles-it">a custom-built sort step already settles it</h2>
+<p>The component in this project responsible for arranging fragments into text, referred to here as
+the assembler, was given one fixed rule. It re-sorts every surviving block before it ever reaches
+the model, unconditionally, by company, year, section, document, and position. No relevance score
+appears anywhere in that rule. Any similar system would need something playing this same role,
+whatever it happens to be called, since raw retrieved fragments do not arrive in an order a model
+should read them in.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6A737D"># ContextAssembler._sort_sentences(), called unconditionally before formatting</span></span>
+<span class="line"><span style="color:#D73A49">return</span><span style="color:#005CC5"> sorted</span><span style="color:#24292E">(sentences, </span><span style="color:#E36209">key</span><span style="color:#D73A49">=lambda</span><span style="color:#24292E"> s: (</span></span>
+<span class="line"><span style="color:#24292E">    s.company_name, s.report_year, s.section_name, s.doc_id, s.sentence_pos</span></span>
+<span class="line"><span style="color:#24292E">))</span></span></code></pre>
+<p>So a run with no reranker and a run that only scores, with no pruning, produce a byte-identical
+string sent to the model. This was checked directly rather than assumed: the two configurations
+kept an identical set of 166 sentences for a sample query, and the sort key above confirms no
+score ever survives past that line.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">arm</th><th style="text-align:left">config</th><th style="text-align:right">recall@30</th><th style="text-align:right">MRR</th></tr></thead><tbody><tr><td style="text-align:left">no rerank</td><td style="text-align:left">baseline</td><td style="text-align:right">0.059</td><td style="text-align:right">0.029</td></tr><tr><td style="text-align:left">score only</td><td style="text-align:left">membership unchanged</td><td style="text-align:right">0.470</td><td style="text-align:right">0.076</td></tr><tr><td style="text-align:left">pruned top-8</td><td style="text-align:left">shipped config</td><td style="text-align:right">0.470</td><td style="text-align:right">0.074</td></tr></tbody></table>
+<p>Score-only against pruned is the only fair comparison in that table, and it is flat. One
+qualification worth keeping in view: <code>recall@5</code> does not move across any of the three arms, but
+that is close to a property of the metric rather than a finding, since the kept list is already
+sorted by score and the first five entries cannot change once anything at all is kept. The real
+result is narrower than it first looks. Reordering, by itself, is inert in this architecture. That
+is a property of a sorting step that discards order, not a property of rerankers in general.</p>
+<h2 id="a-scorer-that-cannot-see-what-the-corpus-already-knows">a scorer that cannot see what the corpus already knows</h2>
+<p>The underlying data carries a filing year, a section label, and a company identifier on every row,
+none of it hidden. The cross-encoder is simply never given access to any of it. It scores text and
+nothing else. Financial filings repeat the same sentence, almost word for word, year after year,
+so the highest-scoring match for a question is frequently the right paragraph from the wrong year,
+because the scorer has no way to tell the years apart.</p>
+<p>Across one sample: <strong>45.2% of the blocks that survive at top-8 come from a year the question never
+asked about</strong>, against a 31.5% off-year rate in the unpruned pool. Off-year blocks are also longer
+and score higher on average, so pruning concentrates the problem instead of filtering it out. One
+live example, run on a question outside the fixed set used to check the system’s answers (called
+the gold set below): a question about a company’s 2025 manufacturing capacity
+returned the same disclosure sentence from two different filings at ranks one and two, with one
+number changed. The FY2022 filing estimated the commitment near $4.5 billion. The FY2023 filing
+restated it near $10 billion. The actual FY2025 block landed at rank seven. At a tighter budget of
+four blocks, the question would have received zero FY2025 evidence. At eight, the right year
+survives by a single position.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left"></th><th style="text-align:right">off-year rate</th></tr></thead><tbody><tr><td style="text-align:left">unpruned pool</td><td style="text-align:right">31.5%</td></tr><tr><td style="text-align:left">survivors at top-8</td><td style="text-align:right">45.2%</td></tr><tr><td style="text-align:left">top-8, single company and year</td><td style="text-align:right">47.4%</td></tr></tbody></table>
+<p>Not every question breaks this way. A separate query about a different company’s export controls,
+where the vocabulary is distinctive rather than repeated across years, ranked the correct year
+first and second without trouble. The failure is specific to language that repeats, not to every
+question the corpus can ask.</p>
+<h2 id="the-ranking-held-up-the-answers-were-mixed">the ranking held up, the answers were mixed</h2>
+<p>Retrieval metrics are a proxy for whether an answer is actually good. Ten questions from the gold
+set were run through the full pipeline, retrieval followed by a language model writing an answer,
+at three different reranking settings, and the resulting answers were read by hand against the
+correct answer rather than scored automatically.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">config</th><th style="text-align:right">context</th><th style="text-align:right">cost</th><th style="text-align:right">ROUGE-L</th><th style="text-align:right">cosine</th></tr></thead><tbody><tr><td style="text-align:left">no rerank</td><td style="text-align:right">35,905 chars</td><td style="text-align:right">$0.197</td><td style="text-align:right">0.101</td><td style="text-align:right">0.762</td></tr><tr><td style="text-align:left">top-16</td><td style="text-align:right">25,015 chars</td><td style="text-align:right">$0.163</td><td style="text-align:right">0.105</td><td style="text-align:right">0.732</td></tr><tr><td style="text-align:left">top-8</td><td style="text-align:right">14,314 chars</td><td style="text-align:right">$0.132</td><td style="text-align:right">0.112</td><td style="text-align:right">0.771</td></tr></tbody></table>
+<p>Cutting to top-8 dropped context by 61% and cost by 32%. Whether that also improved the answers
+depends on the question, which is why a human read every one rather than trusting the two score
+columns above. For each of the ten questions, the judge compared the answer produced at a given
+setting against the answer produced with no reranker at all, and marked it better, the same, or
+worse. At top-16: one answer improved, six were unchanged, and three got worse. At top-8: three
+improved, two were unchanged, and five got worse. So both settings lost more often than they won,
+and the losses cluster in one place: every question that needed evidence from several companies
+or several years in a single answer lost ground. The wins were single-fact questions, where
+removing distractor text let the model land on the one fact that mattered.</p>
+<p>The clearest case is one where less context produced the more honest answer. At top-16, the model
+wrote a confident paragraph about a company’s 2010 risk disclosures. There is not one block from
+that company’s actual 2010 filing anywhere in the 44-block pool it was given, only near-identical
+filler from 2016 through 2025 filed under the same section heading. At top-8, with less material
+available, the model stated plainly that the year was not in context. More evidence produced a
+fabricated answer. Less evidence produced the true one.</p>
+<p>The automated scores missed this distinction entirely. On two of the ten questions, ROUGE-L or
+cosine ranked the top-8 answer highest, on the same answer the human judge scored as covering
+fewer of the companies the question had actually asked about.</p>
+<h2 id="one-ranking-one-policy-and-why-they-cannot-be-pulled-apart">one ranking, one policy, and why they cannot be pulled apart</h2>
+<p>The reranker’s ranking ability was checked on its own terms, separately from the harm above, and
+it holds up. Gold evidence scores in the top 5% of the ranked list on average, and ranks first
+outright for ten of the twenty-five questions where the correct evidence is reachable at all. The
+model is doing real relevance work, not simply counting words: controlling for block length, the
+gap between gold and non-gold scores survives, and in the middle length range it grows rather than
+shrinks.</p>
+<p>That is what makes the finding sharper than “the reranker is bad.” The harm measured above comes
+entirely from pruning, and pruning is not an optional add-on sitting beside the ranking. It is the
+only part of using this reranker that changes anything the model reads, established directly by
+the sort-order code earlier in this post. A reranker whose scores are never allowed to reorder
+anything can only ever act through what it throws away. So a correct ranking and a worse outcome
+are not two separate results here. They are the same mechanism, viewed from either end of it.</p>
+<h2 id="an-external-result-worth-answering-directly">an external result worth answering directly</h2>
+<p>A separate published study, “Enhancing Financial Report Question-Answering: A RAG System with
+Reranking Analysis” (accepted at ICECET 2026), reranked a comparable corpus of financial filings
+using the FinDER benchmark, roughly 1,500 queries drawn from S&amp;P 500 disclosures, and measured
+answer correctness directly rather than a retrieval proxy. Reranking raised the share of answers
+scored at least 8 out of 10 from 33.5% to 49.0%, and cut fully incorrect answers by more than a
+third.</p>
+<p>The two results sit next to each other without actually contradicting, once the setups are
+compared. That study reranked a hybrid lexical-plus-semantic retrieval pool, not a purely
+score-ranked one. The pipeline examined here discards ranking outright once scoring finishes, and
+its corpus repeats near-identical sentences across two decades of filings in a way the cited
+study’s setup may not.</p>
+<h2 id="what-these-four-add-up-to">what these four add up to</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left"></th><th style="text-align:left">looked like the finding</th><th style="text-align:left">what actually held up</th></tr></thead><tbody><tr><td style="text-align:left">the sort step</td><td style="text-align:left">reordering should help</td><td style="text-align:left">reordering cannot matter here at all, provable directly from the code</td></tr><tr><td style="text-align:left">the scorer</td><td style="text-align:left">the corpus lacks metadata</td><td style="text-align:left">the corpus has it; the scoring model is never shown it</td></tr><tr><td style="text-align:left">the ranking versus the policy</td><td style="text-align:left">reranking hurt across the board</td><td style="text-align:left">the ranking held up; the harm is entirely the pruning it is bundled with</td></tr><tr><td style="text-align:left">the literature</td><td style="text-align:left">reranking does not work</td><td style="text-align:left">it worked elsewhere, on a related corpus, at far larger scale</td></tr></tbody></table>
+<p>The seed idea behind this post also named BM25 as a second method that would reward long,
+boilerplate-heavy text the same way the cross-encoder does. BM25 was never run against this
+corpus, and it normalises for document length by design, so it would not misbehave in that
+particular way even if it had been tried. What actually rewards boilerplate here is lexical
+overlap, a different mechanism entirely: <strong>44.9% of sentences in the corpus are exact duplicates
+of another sentence</strong>, mostly the same company repeating the same disclosure across filing years.
+The project’s own lexical gold-label selector, built on that kind of matching, picked boilerplate
+over the real answer in at least five of thirty-one cases.</p>
+<h2 id="what-this-sample-cannot-establish">what this sample cannot establish</h2>
+<p>Thirty-one questions is not enough to detect a modest real effect. The smallest change this
+sample could reliably tell apart from noise is larger than the change actually observed, so “flat”
+here means the sample was too small to see past, not that nothing happened. The retrieval draws
+were also not perfectly reproducible from one run to the next under identical settings, so even
+the 64.5% ceiling, the share of gold evidence the retriever surfaces at all before any reranking
+happens, is probably an undercount rather than an exact figure.</p>
+<p>The project shipped with reranking off by default, for the reason this post has been building
+toward: the reranker’s own ranking ability was fine on independent inspection. The pruning policy
+bundled with it was not, and the two cannot be separated in this design.</p>
+  </article> </div>   </main> <footer class="foot"> <span>xianyunshi &middot; 2026</span> <span>art — miscenscene</span> </footer> <div id="mc-layer" aria-hidden="true"></div>   <script type="module" src="/xianyunshi/_astro/MagicCircle.astro_astro_type_script_index_0_lang.DBDaBdws.js"></script> </body></html>
