@@ -1,0 +1,309 @@
+<!DOCTYPE html><!--
+  The per-post accent MUST ride on an inline style attribute here. A `<style>:root{...}</style>`
+  block in head loses the cascade to global.css (same specificity, and Astro's stylesheet link
+  lands later), which silently left every page on the default accent.
+--><html lang="en" style="--accent:#13505C;"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>polars learning notes: hitting a 39GB wall — xianyunshi</title><meta name="description" content="thirteen things that actually stuck from three practice notebooks, and the eager read that undid all of them at the one file where it mattered"><link rel="alternate" type="application/rss+xml" title="xianyunshi" href="/xianyunshi/rss.xml"><link rel="icon" href="/xianyunshi/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/xianyunshi/favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="/xianyunshi/favicon-16.png"><link rel="apple-touch-icon" href="/xianyunshi/apple-touch-icon.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400;1,6..72,600&family=Inter:wght@400;500&display=swap"><link rel="stylesheet" href="/xianyunshi/_astro/BaseLayout.C9kYIoYU.css"><style>.plate[data-astro-cid-j5yaa2ez]{position:relative;margin:1.5rem auto 2rem;width:min(var(--pw),100%);padding:0}.plate-halo[data-astro-cid-j5yaa2ez]{position:absolute;inset:-20px -24px -28px;background-image:radial-gradient(circle at 22% 30%,rgba(64,108,152,.3) 1.1px,transparent 1.8px),radial-gradient(circle at 71% 62%,rgba(64,108,152,.24) .9px,transparent 1.6px),radial-gradient(circle at 48% 84%,rgba(168,136,106,.22) .9px,transparent 1.6px),radial-gradient(circle at 86% 18%,rgba(64,108,152,.2) .8px,transparent 1.5px);background-size:46px 46px,37px 41px,46px 46px,37px 41px;-webkit-mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,transparent 42%,#000 100%);mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,transparent 42%,#000 100%);pointer-events:none}.plate-frame[data-astro-cid-j5yaa2ez]{position:relative;overflow:hidden;border-radius:3px}.plate[data-astro-cid-j5yaa2ez] img[data-astro-cid-j5yaa2ez]{display:block;width:100%;height:auto;opacity:var(--pop);mix-blend-mode:var(--pbl);transform:scale(1);transition:transform .62s cubic-bezier(.2,.7,.2,1);will-change:transform;-webkit-mask-image:radial-gradient(ellipse 84% 88% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 84% 88% at 50% 50%,#000 52%,transparent 100%)}.plate-veil[data-astro-cid-j5yaa2ez]{position:absolute;inset:0;background:linear-gradient(168deg,rgba(251,250,246,calc(var(--pveil) * .5)),rgba(251,250,246,var(--pveil)) 55%,rgba(251,250,246,calc(var(--pveil) * 1.5)));opacity:1;transition:opacity .62s ease;pointer-events:none}.plate[data-astro-cid-j5yaa2ez]:hover img[data-astro-cid-j5yaa2ez]{transform:scale(1.035)}.plate[data-astro-cid-j5yaa2ez]:hover .plate-veil[data-astro-cid-j5yaa2ez]{opacity:0}.plate[data-astro-cid-j5yaa2ez].band{width:min(46rem,100%);margin:1rem auto 1.9rem}.plate[data-astro-cid-j5yaa2ez].band img[data-astro-cid-j5yaa2ez]{aspect-ratio:21 / 8;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 94% 104% at 50% 34%,#000 56%,transparent 100%);mask-image:radial-gradient(ellipse 94% 104% at 50% 34%,#000 56%,transparent 100%)}figcaption[data-astro-cid-j5yaa2ez]{position:relative;margin-top:.55rem;text-align:right;font-family:var(--sans);font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}@media(max-width:700px){.plate-halo[data-astro-cid-j5yaa2ez]{inset:-14px 0 -18px}}@media(prefers-reduced-motion:reduce){.plate[data-astro-cid-j5yaa2ez] img[data-astro-cid-j5yaa2ez],.plate-veil[data-astro-cid-j5yaa2ez]{transition:none}.plate[data-astro-cid-j5yaa2ez]:hover img[data-astro-cid-j5yaa2ez]{transform:scale(1)}}
+.topics[data-astro-cid-gjtny2mx]{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .75rem;margin:-.4rem 0 1.5rem}.topics-label[data-astro-cid-gjtny2mx]{font-family:var(--sans);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);flex:none}.topics[data-astro-cid-gjtny2mx] ul[data-astro-cid-gjtny2mx]{display:flex;flex-wrap:wrap;gap:.34rem .4rem;list-style:none;margin:0;padding:0}.topics[data-astro-cid-gjtny2mx] li[data-astro-cid-gjtny2mx]{font-family:var(--sans);font-size:.7rem;line-height:1.35;letter-spacing:.015em;color:color-mix(in srgb,var(--accent) 78%,var(--ink-body));background:color-mix(in srgb,var(--accent) 6%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:3px;padding:.14rem .44rem;white-space:nowrap}@media(max-width:520px){.topics[data-astro-cid-gjtny2mx] li[data-astro-cid-gjtny2mx]{white-space:normal}}
+</style></head> <body> <div class="wallpaper" style="background-image:url(/xianyunshi/art/fading-footsteps.jpg)" aria-hidden="true"></div> <div class="starfield" aria-hidden="true"></div> <header class="masthead"> <a class="wordmark" href="/xianyunshi/">xianyun<span>shi</span></a> <nav class="nav"> <a href="/xianyunshi/">notes</a> <a href="/xianyunshi/about">about</a> <a href="/xianyunshi/rss.xml">rss</a> </nav> </header> <main>  <div class="sheet reading" data-astro-cid-gjtny2mx> <figure class="plate band" style="--pw:440px; --pop:0.95; --pbl:normal; --pveil:0.26;" data-astro-cid-j5yaa2ez> <div class="plate-halo" aria-hidden="true" data-astro-cid-j5yaa2ez></div> <div class="plate-frame" data-astro-cid-j5yaa2ez> <img src="/xianyunshi/art/fading-footsteps.jpg" alt width="440" loading="lazy" decoding="async" data-astro-cid-j5yaa2ez> <div class="plate-veil" aria-hidden="true" data-astro-cid-j5yaa2ez></div> </div>  </figure> <article class="wrap" data-astro-cid-gjtny2mx> <div class="meta" data-astro-cid-gjtny2mx> <span class="dateline" data-astro-cid-gjtny2mx> 4 Aug 2026  </span>  </div> <h1 data-astro-cid-gjtny2mx>polars learning notes: hitting a 39GB wall</h1> <p class="standfirst" data-astro-cid-gjtny2mx>thirteen things that actually stuck from three practice notebooks, and the eager read that undid all of them at the one file where it mattered</p>  <div class="topics" data-astro-cid-gjtny2mx> <span class="topics-label" data-astro-cid-gjtny2mx>topics</span> <ul data-astro-cid-gjtny2mx> <li data-astro-cid-gjtny2mx>polars expressions vs values</li><li data-astro-cid-gjtny2mx>list column mini-expressions</li><li data-astro-cid-gjtny2mx>lazy evaluation and predicate pushdown</li><li data-astro-cid-gjtny2mx>struct field unpacking</li><li data-astro-cid-gjtny2mx>aggregation grain</li><li data-astro-cid-gjtny2mx>window functions vs group_by</li><li data-astro-cid-gjtny2mx>log-return compounding</li><li data-astro-cid-gjtny2mx>row-group statistics</li><li data-astro-cid-gjtny2mx>eager read kernel crash</li><li data-astro-cid-gjtny2mx>lazy streaming collect</li> </ul> </div> <hr class="rule" data-astro-cid-gjtny2mx>  <p>Closer to a personal reference sheet, for lookup or re-learning, than a piece meant to be read
+cold. Sorry if it doesn’t feel too clear on a cold read. These are things I learned from my own
+practice notebooks. Dataset: a 71.8 million row financial sentence corpus.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">expr </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;sentenceID&quot;</span><span style="color:#24292E">).unique()</span></span>
+<span class="line"><span style="color:#005CC5">print</span><span style="color:#24292E">(</span><span style="color:#032F62">&quot;Expression object:&quot;</span><span style="color:#24292E">, expr)          </span><span style="color:#6A737D"># prints a plan node, not data</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> df.select([expr])                 </span><span style="color:#6A737D"># now it&#39;s data</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">unique_sentence_ids </span><span style="color:#D73A49">=</span><span style="color:#24292E"> df.get_column(</span><span style="color:#032F62">&quot;sentenceID&quot;</span><span style="color:#24292E">).unique().to_list()   </span><span style="color:#6A737D"># eager, immediate, a plain list</span></span></code></pre>
+<p><strong>1. <code>pl.col(...)</code> is a plan, not a value, until something evaluates it.</strong> Polars has two parallel
+worlds that look similar and aren’t. <code>df.get_column(...)</code> walks into the eager world and hands back
+a concrete column right away. Call <code>.to_list()</code> on it and you get a plain Python list.
+<code>pl.col(...)</code> walks into the expression world instead. It builds a small unevaluated tree that
+describes <em>what to compute</em>, and it only becomes data once you hand it to <code>select</code>,
+<code>with_columns</code>, or <code>.agg(...)</code>. Printing the bare expression prints the plan, not the answer.
+That’s the moment that trips you up the first time, because nothing in the syntax warns
+you which world you’re in. Every later pattern in this list (window functions, struct unpacking,
+lazy scans) is really just more things you can put inside this expression tree before evaluating
+it once.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">df.with_columns(</span></span>
+<span class="line"><span style="color:#E36209">    y</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.col.x </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 3</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">    x_max</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;x&quot;</span><span style="color:#24292E">).list.max(),</span></span>
+<span class="line"><span style="color:#E36209">    x_sum</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;x&quot;</span><span style="color:#24292E">).list.sum()</span></span>
+<span class="line"><span style="color:#24292E">).with_columns(</span></span>
+<span class="line"><span style="color:#E36209">    z2</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;x&quot;</span><span style="color:#24292E">).list.eval((pl.element() </span><span style="color:#D73A49">&gt;=</span><span style="color:#005CC5"> 2</span><span style="color:#24292E">) </span><span style="color:#D73A49">&amp;</span><span style="color:#24292E"> (pl.element() </span><span style="color:#D73A49">&lt;=</span><span style="color:#005CC5"> 4</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">tickers_norm </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;tickers&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">      .list.eval(pl.element().str.to_uppercase())   </span><span style="color:#6A737D"># a string method, run *inside* every list cell</span></span>
+<span class="line"><span style="color:#24292E">      .list.unique().list.sort()</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>2. A list column isn’t something you iterate. It’s a mini expression scope.</strong> <code>.list.max()</code> and
+<code>.list.sum()</code> are what you’d expect: one aggregate number per row. <code>.list.eval()</code> is the
+interesting one. It takes an expression written in terms of <code>pl.element()</code>, the placeholder for
+“the current item inside this list,” and runs it vectorized against every element of every list in
+the column, no Python <code>for</code> loop unpacking anything. The first example runs a numeric predicate
+elementwise (<code>&gt;= 2 &amp; &lt;= 4</code>). The second runs a <em>string method</em> elementwise
+(<code>.str.to_uppercase()</code>). Worth keeping: <code>.list.eval()</code> isn’t a special tool for numbers. It’s the
+entire expression language, just scoped one level down into the list.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">exploded </span><span style="color:#D73A49">=</span><span style="color:#24292E"> toy.select([</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;tickers&quot;</span><span style="color:#24292E">]).explode(</span><span style="color:#032F62">&quot;tickers&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">result1 </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    exploded.group_by(</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    .agg(pl.col(</span><span style="color:#032F62">&quot;tickers&quot;</span><span style="color:#24292E">).unique().sort().alias(</span><span style="color:#032F62">&quot;merged_tickers&quot;</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    toy.group_by(</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    .agg(pl.col(</span><span style="color:#032F62">&quot;tickers&quot;</span><span style="color:#24292E">).flatten())          </span><span style="color:#6A737D"># no explode step at all, it just works</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">row_concat </span><span style="color:#D73A49">=</span><span style="color:#24292E"> toy.select([</span></span>
+<span class="line"><span style="color:#24292E">    pl.concat_list([</span><span style="color:#032F62">&quot;tickers&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;exchanges&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;alt&quot;</span><span style="color:#24292E">]).alias(</span><span style="color:#032F62">&quot;combined&quot;</span><span style="color:#24292E">)   </span><span style="color:#6A737D"># merges across COLUMNS, same row</span></span>
+<span class="line"><span style="color:#24292E">])</span></span></code></pre>
+<p><strong>3. “Merge these lists” splits into two different questions, and each has its own function.</strong>
+Merging lists <em>down a column, across rows in a group</em> (three filings’ ticker lists into one) is
+what <code>explode</code>, then <code>group_by</code>, then re-aggregate does. Turns out to be unnecessary ceremony,
+because <code>.flatten()</code> inside <code>.agg(...)</code> does the same collapse in one line, no intermediate
+row-per-element table needed. Merging lists <em>across columns, within the same row</em> (this row’s
+tickers plus this row’s exchanges into one combined list) is a completely different operation,
+<code>pl.concat_list</code>. Confusing the two is an easy mistake, because both start from “I have
+several lists and I want one list.”</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">df.with_columns(</span></span>
+<span class="line"><span style="color:#24292E">    pl.when(pl.col(</span><span style="color:#032F62">&quot;x&quot;</span><span style="color:#24292E">).str.starts_with(</span><span style="color:#032F62">&quot;foo&quot;</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">      .then(pl.col(pl.String).str.to_uppercase())</span></span>
+<span class="line"><span style="color:#24292E">      .otherwise(pl.col(pl.String))</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">kpi_sentences.filter(</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;likely_kpi&quot;</span><span style="color:#24292E">) </span><span style="color:#D73A49">|</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;has_numbers&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">).filter(</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">).is_in([</span><span style="color:#005CC5">9</span><span style="color:#24292E">, </span><span style="color:#005CC5">10</span><span style="color:#24292E">])</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>4. Conditional logic in Polars is either a rewrite or a filter, and they’re not interchangeable.</strong>
+<code>pl.when().then().otherwise()</code> rewrites <em>values</em>. Every row survives, some just get a different
+value written into them (here: uppercase every string column, but only on rows whose <code>x</code> starts
+with <code>&quot;foo&quot;</code>). <code>.filter(A | B)</code> removes <em>rows</em>. Nothing gets rewritten, some rows just stop
+existing in the output. Both are boolean logic over columns, both avoid a Python-level branch.
+One shrinks the table and one doesn’t. Picking the wrong one is a subtle bug, not an
+error message.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#005CC5">print</span><span style="color:#24292E">(df.schema.get(</span><span style="color:#032F62">&quot;returns&quot;</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#005CC5">print</span><span style="color:#24292E">(df.select(pl.col(</span><span style="color:#032F62">&quot;returns&quot;</span><span style="color:#24292E">)).head(</span><span style="color:#005CC5">2</span><span style="color:#24292E">))     </span><span style="color:#6A737D"># look before you unpack</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">df_flat </span><span style="color:#D73A49">=</span><span style="color:#24292E"> df.with_columns([</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;returns&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;1d&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;ret&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;ret_1d&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;returns&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;5d&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;ret&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;ret_5d&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;returns&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;30d&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;ret&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;ret_30d&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">])</span></span></code></pre>
+<p><strong>5. Real filing data doesn’t arrive flat. SEC returns ship as a nested struct.</strong> <code>returns</code> isn’t
+a number column, it’s a struct with three named sub-structs (<code>1d</code>, <code>5d</code>, <code>30d</code>), each holding its
+own <code>ret</code> field, like <code>returns.5d.ret</code>, three levels deep. <code>.struct.field(...)</code> chains exactly like a
+path: one call per level. The habit worth keeping is the first snippet, not the second. Check
+<code>df.schema.get(...)</code> or peek at one row <em>before</em> writing the unpacking chain. Guessing
+field names on a nested struct wastes more time than the two-second look.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">df_year </span><span style="color:#D73A49">=</span><span style="color:#24292E"> df.with_columns(</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;reportDate&quot;</span><span style="color:#24292E">).str.strptime(pl.Date, </span><span style="color:#E36209">strict</span><span style="color:#D73A49">=</span><span style="color:#005CC5">False</span><span style="color:#24292E">).dt.year().alias(</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">comp_rollup </span><span style="color:#D73A49">=</span><span style="color:#24292E"> df_year.filter(</span></span>
+<span class="line"><span style="color:#24292E">    (pl.col(</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">) </span><span style="color:#D73A49">&gt;</span><span style="color:#005CC5"> 2014</span><span style="color:#24292E">) </span><span style="color:#D73A49">&amp;</span><span style="color:#24292E"> (pl.col(</span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">).is_in(</span><span style="color:#005CC5">TOP10</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">kpi_sentences </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    df.lazy()</span></span>
+<span class="line"><span style="color:#24292E">    .filter(pl.col(</span><span style="color:#032F62">&quot;reportDate&quot;</span><span style="color:#24292E">).str.slice(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, </span><span style="color:#005CC5">4</span><span style="color:#24292E">).is_in(</span><span style="color:#005CC5">TARGET_YEARS</span><span style="color:#24292E">))   </span><span style="color:#6A737D"># cheaper: no real date parse</span></span>
+<span class="line"><span style="color:#24292E">    .filter(pl.col(</span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">).is_in(</span><span style="color:#005CC5">KPI_SECTIONS</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>6. The column you want to filter on sometimes doesn’t exist yet. You derive it once, then treat
+it like any other column.</strong> <code>reportDate</code> arrives as a string. <code>fiscal_year</code> doesn’t exist until
+<code>strptime</code> plus <code>.dt.year()</code> make it exist. Worth noticing: two different notebooks
+solve “get the year” two different ways. One is a real typed <code>Date</code> parse (correct, handles malformed
+dates via <code>strict=False</code>, costs an actual parse). The other is a raw <code>str.slice(0, 4)</code> on the assumption
+the field always starts with a 4-digit year (cheaper, and silently wrong the moment that assumption
+breaks). Neither is “the” right answer. It’s a real correctness versus cost tradeoff that shows up
+again later at a much bigger scale.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#005CC5">DATA_PATH</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> Path(</span><span style="color:#032F62">&quot;../data/exports/sec_filings_small_full.parquet&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">df </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pl.read_parquet(</span><span style="color:#005CC5">DATA_PATH</span><span style="color:#24292E">)     </span><span style="color:#6A737D"># eager, loads now</span></span>
+<span class="line"><span style="color:#24292E">lf </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pl.scan_parquet(</span><span style="color:#005CC5">DATA_PATH</span><span style="color:#24292E">)     </span><span style="color:#6A737D"># lazy, loads nothing yet, just describes a plan</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">lf_base </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    pl.scan_parquet(</span><span style="color:#005CC5">DATA_PATH</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    .with_columns(</span><span style="color:#005CC5">...</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    .filter(</span><span style="color:#005CC5">...</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">lf_cached </span><span style="color:#D73A49">=</span><span style="color:#24292E"> lf_base.cache()          </span><span style="color:#6A737D"># pin one filtered slice, branch multiple aggregations off it</span></span></code></pre>
+<p><strong>7. Going lazy is a decision you check, not a habit you trust.</strong> <code>pl.scan_parquet</code> instead of
+<code>pl.read_parquet</code> costs nothing to write and means something completely different. The file isn’t
+read until something downstream forces it. Everything between the scan and the final
+<code>.collect()</code> is a plan the query optimizer gets to rewrite: pushing filters down to the file
+reader, dropping unread columns, before a single row moves. <code>.cache()</code> on a lazy frame is the
+companion move. Once you’ve built one filtered or derived slice you plan to reuse for several
+different aggregations, cache it so the shared filtering work happens once. My own note from
+around this point says to check with <code>.explain()</code> that only the needed columns and rows are
+actually being scanned, and that doing this catches real speedups. I never wrote down a measured
+number for that, so treat it as a habit worth keeping, not a benchmark.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">docs </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    df_year</span></span>
+<span class="line"><span style="color:#24292E">    .group_by(</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    .agg([</span></span>
+<span class="line"><span style="color:#24292E">        pl.first(</span><span style="color:#032F62">&quot;cik&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;cik&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">        pl.first(</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">        pl.n_unique(</span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;n_sections_doc&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">        pl.count().alias(</span><span style="color:#032F62">&quot;n_sentences_doc&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    ])</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">company_year </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    docs</span></span>
+<span class="line"><span style="color:#24292E">    .group_by([</span><span style="color:#032F62">&quot;cik&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;name&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">])</span></span>
+<span class="line"><span style="color:#24292E">    .agg([</span></span>
+<span class="line"><span style="color:#24292E">        pl.n_unique(</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;n_docs&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">        pl.sum(</span><span style="color:#032F62">&quot;n_sentences_doc&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;n_sentences&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    ])</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>8. The “grain” of a table has to be nailed down before you aggregate across it, or the higher-up
+numbers quietly double count.</strong> The raw table is one row per <em>sentence</em>. Rolling straight from
+sentences to a company-year summary in one aggregation would double count anything that varies per
+sentence but is really a per-filing fact. So it happens in two explicit steps. First, collapse to
+one row per <code>docID</code> (a real filing), carrying forward the doc-level facts with <code>pl.first(...)</code>
+since they’re constant within a filing. Only then roll <em>that</em> table up to company-year. Two
+aggregations instead of one looks like more code. It’s actually the thing that keeps the second
+aggregation’s counts honest.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">lf_doc_returns_long </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    lf_docs</span></span>
+<span class="line"><span style="color:#24292E">    .select(</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;cik&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;name&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;ret_1d&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;ret_5d&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;ret_30d&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    .unpivot(</span></span>
+<span class="line"><span style="color:#E36209">        index</span><span style="color:#D73A49">=</span><span style="color:#24292E">[</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;cik&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;name&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">],</span></span>
+<span class="line"><span style="color:#E36209">        on</span><span style="color:#D73A49">=</span><span style="color:#24292E">[</span><span style="color:#032F62">&quot;ret_1d&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;ret_5d&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;ret_30d&quot;</span><span style="color:#24292E">],</span></span>
+<span class="line"><span style="color:#E36209">        variable_name</span><span style="color:#D73A49">=</span><span style="color:#032F62">&quot;horizon&quot;</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#E36209">        value_name</span><span style="color:#D73A49">=</span><span style="color:#032F62">&quot;ret&quot;</span></span>
+<span class="line"><span style="color:#24292E">    )</span></span>
+<span class="line"><span style="color:#24292E">    .filter(pl.col(</span><span style="color:#032F62">&quot;ret&quot;</span><span style="color:#24292E">).is_not_null())</span></span>
+<span class="line"><span style="color:#24292E">    .with_columns(</span></span>
+<span class="line"><span style="color:#E36209">        horizon</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;horizon&quot;</span><span style="color:#24292E">).str.replace(</span><span style="color:#032F62">&quot;^ret_&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;&quot;</span><span style="color:#24292E">, </span><span style="color:#E36209">literal</span><span style="color:#D73A49">=</span><span style="color:#005CC5">False</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#E36209">        ret_safe</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;ret&quot;</span><span style="color:#24292E">).clip(</span><span style="color:#E36209">lower_bound</span><span style="color:#D73A49">=-</span><span style="color:#005CC5">0.9999</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#6A737D">        # if the Polars build lacks Expr.clip(), the fallback written down at the time was:</span></span>
+<span class="line"><span style="color:#6A737D">        # ret_safe = pl.when(pl.col(&quot;ret&quot;) &lt; -0.9999).then(-0.9999).otherwise(pl.col(&quot;ret&quot;))</span></span>
+<span class="line"><span style="color:#24292E">    )</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>9. Three parallel columns become one column with a label, so one aggregation replaces three.</strong>
+<code>ret_1d</code>, <code>ret_5d</code>, <code>ret_30d</code> are the same kind of fact at three horizons. Exactly the shape
+<code>.unpivot()</code> is for. <code>index</code> names what stays fixed per row, <code>on</code> names the columns being folded
+down into two new ones: <code>horizon</code> (which column it came from) and <code>ret</code> (the value). One
+<code>group_by([&quot;cik&quot;,&quot;horizon&quot;])</code> downstream now covers all three horizons instead of three
+near-identical blocks of aggregation code. The <code>ret_safe</code> clip is a small piece of domain hygiene
+riding along. A return below minus 100% would make the next step’s <code>log()</code> blow up, so it gets
+floored first, with a plain <code>when</code>/<code>then</code> fallback written down in a comment in case <code>.clip()</code>
+isn’t available in a given Polars build. Worth keeping as a pattern in general.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">comp_ret </span><span style="color:#D73A49">=</span><span style="color:#24292E"> ((pl.col(</span><span style="color:#032F62">&quot;ret_safe&quot;</span><span style="color:#24292E">) </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 1</span><span style="color:#24292E">).log().sum()).exp() </span><span style="color:#D73A49">-</span><span style="color:#005CC5"> 1</span><span style="color:#6A737D">     # compounded return, one group, one year</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">log1p_ret </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (pl.col(</span><span style="color:#032F62">&quot;comp_ret&quot;</span><span style="color:#24292E">) </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 1</span><span style="color:#24292E">).log()</span></span>
+<span class="line"><span style="color:#24292E">cagr           </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;log1p_ret&quot;</span><span style="color:#24292E">).mean().exp() </span><span style="color:#D73A49">-</span><span style="color:#005CC5"> 1</span><span style="color:#6A737D">            # across years: mean, not sum, then back out</span></span>
+<span class="line"><span style="color:#24292E">total_comp_ret </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;log1p_ret&quot;</span><span style="color:#24292E">).sum().exp() </span><span style="color:#D73A49">-</span><span style="color:#005CC5"> 1</span></span></code></pre>
+<p><strong>10. Averaging returns arithmetically is wrong. The fix is log-sum-exp, and it’s just expression
+chaining.</strong> Compounding is multiplicative, <code>(1+r1)(1+r2)...</code>, and a plain mean of the r’s
+overstates it. The standard fix converts each return to <code>log(1+r)</code>, sums them (or means them, for
+an annualized CAGR across years), and exponentiates back. <code>sum</code> for total compounded return across
+docs in one year, <code>mean</code> for CAGR across years, same <code>log1p</code> groundwork underneath both. Nothing
+about this needs a special finance function. It composes with <code>group_by().agg()</code> like any other
+expression. The “hard” quant technique and the “boring” aggregation machinery are the same tool.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">df_ranked </span><span style="color:#D73A49">=</span><span style="color:#24292E"> df.with_columns([</span></span>
+<span class="line"><span style="color:#24292E">    (pl.int_range(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, pl.len()).over(</span><span style="color:#032F62">&quot;store&quot;</span><span style="color:#24292E">) </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 1</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;row_num&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    pl.col(</span><span style="color:#032F62">&quot;sales&quot;</span><span style="color:#24292E">).rank().over(</span><span style="color:#032F62">&quot;store&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;rank&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    (pl.col(</span><span style="color:#032F62">&quot;sales&quot;</span><span style="color:#24292E">) </span><span style="color:#D73A49">==</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;sales&quot;</span><span style="color:#24292E">).max().over(</span><span style="color:#032F62">&quot;store&quot;</span><span style="color:#24292E">)).alias(</span><span style="color:#032F62">&quot;is_best_day&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">])</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">lf_first3_per_doc </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    lf_base</span></span>
+<span class="line"><span style="color:#24292E">    .sort([</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;sentenceCount&quot;</span><span style="color:#24292E">])</span></span>
+<span class="line"><span style="color:#24292E">    .with_columns([</span></span>
+<span class="line"><span style="color:#24292E">        pl.int_range(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, pl.len()).over(</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">).alias(</span><span style="color:#032F62">&quot;pos_in_doc&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">        pl.int_range(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, pl.len()).over([</span><span style="color:#032F62">&quot;docID&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">]).alias(</span><span style="color:#032F62">&quot;pos_in_sect&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    ])</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>11. <code>group_by</code> collapses a group to one row. <code>.over(...)</code> keeps every row and stamps the group
+fact back onto each one.</strong> <code>pl.col(&quot;sales&quot;).sum().over(&quot;store&quot;)</code> computes the same total a
+<code>group_by(&quot;store&quot;).agg(sum)</code> would, but the toy dataframe still has 6 rows afterward, not 2. Every
+row now carries its store’s total alongside it, which is what makes per-row things like rank,
+row-number, and “is this the best day for this store” possible without a join back to a collapsed
+table. The real version does the same thing with a compound key. <code>.over([&quot;docID&quot;, &quot;section&quot;])</code>
+numbers each sentence’s position <em>within its own section of its own filing</em>, a compound window key
+instead of a single one. That’s the version that later feeds into “is this the first sentence of a
+section” flags.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">company_horizon_rollup </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    lf_yearly</span></span>
+<span class="line"><span style="color:#24292E">    .group_by([</span><span style="color:#032F62">&quot;cik&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;name&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;horizon&quot;</span><span style="color:#24292E">])</span></span>
+<span class="line"><span style="color:#24292E">    .agg(</span></span>
+<span class="line"><span style="color:#E36209">        _best</span><span style="color:#D73A49">  =</span><span style="color:#24292E"> pl.struct([</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;mean_ret&quot;</span><span style="color:#24292E">]).sort_by(</span><span style="color:#032F62">&quot;mean_ret&quot;</span><span style="color:#24292E">, </span><span style="color:#E36209">descending</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">).first(),</span></span>
+<span class="line"><span style="color:#E36209">        _worst</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.struct([</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;mean_ret&quot;</span><span style="color:#24292E">]).sort_by(</span><span style="color:#032F62">&quot;mean_ret&quot;</span><span style="color:#24292E">, </span><span style="color:#E36209">descending</span><span style="color:#D73A49">=</span><span style="color:#005CC5">False</span><span style="color:#24292E">).first(),</span></span>
+<span class="line"><span style="color:#24292E">    )</span></span>
+<span class="line"><span style="color:#24292E">    .with_columns(</span></span>
+<span class="line"><span style="color:#E36209">        best_year</span><span style="color:#D73A49">  =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;_best&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#E36209">        best_ret</span><span style="color:#D73A49">   =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;_best&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;mean_ret&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#E36209">        worst_year</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;_worst&quot;</span><span style="color:#24292E">).struct.field(</span><span style="color:#032F62">&quot;fiscal_year&quot;</span><span style="color:#24292E">),</span></span>
+<span class="line"><span style="color:#24292E">    )</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>12. “Argmax, but I also want the other columns from that row” doesn’t have a built-in. You pack
+a struct, sort it, and unpack it back.</strong> <code>.max()</code> inside an aggregation gives you the best value,
+and nothing else about the row it came from. Wrapping the columns you actually need into
+<code>pl.struct([...])</code>, sorting <em>that list of structs</em> by the field you care about, and taking
+<code>.first()</code> (or <code>.last()</code>, or flipping <code>descending</code>) gets you the whole row’s worth of context back.
+Here, which fiscal year was the best and worst for a company, not just the number itself. It’s a
+pattern, not a one-off: pack, sort_by, first, unpack. Generalizes to any “best row in the
+group, with its context” problem.</p>
+<hr/>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">kpi_sentences </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    df.lazy()</span></span>
+<span class="line"><span style="color:#24292E">    .filter(pl.col(</span><span style="color:#032F62">&quot;reportDate&quot;</span><span style="color:#24292E">).str.slice(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, </span><span style="color:#005CC5">4</span><span style="color:#24292E">).is_in(</span><span style="color:#005CC5">TARGET_YEARS</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">    .filter(pl.col(</span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">).is_in(</span><span style="color:#005CC5">KPI_SECTIONS</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">s9_kpi_df </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line"><span style="color:#24292E">    kpi_sentences</span></span>
+<span class="line"><span style="color:#24292E">    .filter(pl.col(</span><span style="color:#032F62">&quot;likely_kpi&quot;</span><span style="color:#24292E">) </span><span style="color:#D73A49">|</span><span style="color:#24292E"> pl.col(</span><span style="color:#032F62">&quot;has_numbers&quot;</span><span style="color:#24292E">))</span></span>
+<span class="line"><span style="color:#24292E">    .filter(pl.col(</span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">).is_in([</span><span style="color:#005CC5">9</span><span style="color:#24292E">, </span><span style="color:#005CC5">10</span><span style="color:#24292E">]))</span></span>
+<span class="line"><span style="color:#24292E">    .sort([</span><span style="color:#032F62">&quot;year&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;section&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;name&quot;</span><span style="color:#24292E">])</span></span>
+<span class="line"><span style="color:#24292E">    .head(</span><span style="color:#005CC5">400</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">)</span></span></code></pre>
+<p><strong>13. By the last notebook, the tools stop being demonstrations and start being a real narrowing
+pipeline.</strong> Nothing here is a new technique. It’s <code>.lazy()</code>, <code>.filter()</code>, <code>.sort()</code>, <code>.head()</code>,
+all already covered. What changed is the target: from “show that this works” to “get from 600K+
+sentences down to a small KPI-likely candidate set.” Each filter is independently readable (right
+years, right sections, looks numeric-or-KPI-ish, cap the result) rather than one dense boolean
+condition. That’s the actual skill: chaining simple filters instead of writing one clever one.</p>
+<h2 id="where-the-practice-habits-met-the-real-file">where the practice habits met the real file</h2>
+<p>Every one of the thirteen things above ran against <code>sec_filings_small_full.parquet</code>. Small enough
+that eager versus lazy barely showed up as a difference, filters pushed down cheaply, and
+<code>.explain()</code> came back clean. It was a sandbox, and a good one, but it never once tested the thing
+it was implicitly training for.</p>
+<p>The real corpus is 71,866,962 rows. Converting the raw HuggingFace shards to a single Polars
+DataFrame was the very first step, before any of the thirteen patterns even applied, and it put
+<strong>39.03GB</strong> in memory. That got written down to a <strong>1.53GB</strong> Parquet file (28.7x compression). The
+next real line of code against that file was
+<code>df_large = pl.read_parquet(&quot;sec_filings_large_full.parquet&quot;)</code>. Eager, unscanned, no <code>.lazy()</code> in
+sight. The kernel crashed with no traceback. A Windows access violation, not a catchable Python
+exception. That happened <em>after</em> a dozen cells of correctly reaching for <code>.scan_parquet()</code> on the
+small file. The habit was there, and it still didn’t fire on the one file where it mattered.</p>
+<p>The fix exists, but only as a rule, not as a rerun. <code>platform_core_contract.py</code> already says it
+plainly: kernel crashes mean switch to lazy Polars, <code>scan_parquet</code>, collect at the end. It works
+elsewhere in the project, at the embeddings scale, 614,787 rows, roughly 2GB. It was never pointed
+back at the 71.8M-row file that actually broke. The bulk work at that scale went to DuckDB
+instead. So whether lazy Polars actually holds at 71.8M rows is still open. Nobody ever ran it
+again on the file that raised the question in the first place.</p>
+<h2 id="things-i-think-i-forgot-to-write-down-worth-adding">things I think I forgot to write down, worth adding</h2>
+<p><strong>The one sentence that ties all thirteen points to the crash, and I don’t think I ever stated it
+this plainly:</strong> <em>lazy defers work, it does not shrink the result.</em> <code>.scan_parquet()</code> buys you
+predicate and projection pushdown, real savings. But if the query you eventually <code>.collect()</code>
+still has to materialize the full wide result (every column, every row, no filter having survived
+to the end), laziness bought you nothing. That line, found almost verbatim in my own
+<code>TechNotes_MemoryExp_Handling.md</code>, is the actual thesis connecting the twelve clean examples to
+the one crash. Deserves to be written where I’ll see it again, not buried in a debugging note.</p>
+<p><strong>A quiet API drift worth flagging for future me:</strong> the working code across this project calls
+<code>.collect(streaming=True)</code>. Current Polars docs show the same feature as
+<code>.collect(engine=&quot;streaming&quot;)</code>. Nothing says the old form is deprecated, but if I ever copy this
+code into something new, copy the current spelling, not the one that already works here.</p>
+<p><strong>Row-group size is the same “grain” idea from point 8, one layer down.</strong> I set the DuckDB row
+group size parameter to <code>100000</code>. This is what happened: smaller row groups give finer grained
+min/max stats, so a filter has more chances to skip a group entirely, at some cost in footer
+metadata per group. The source file’s own row groups average 261,334 rows per group, much bigger
+than what I chose.</p>
+<p><strong>Open experiment, still todo:</strong> does <code>pl.scan_parquet(large_file).filter(...).collect(engine=&quot;streaming&quot;)</code>
+handle the 71.8M row file that crashed the kernel? DuckDB already solved the operational problem.
+This would answer the Polars question specifically.</p>
+  </article> </div>   </main> <footer class="foot"> <span>xianyunshi &middot; 2026</span> <span>art — gydw1n</span> </footer> <div id="mc-layer" aria-hidden="true"></div>   <script type="module" src="/xianyunshi/_astro/MagicCircle.astro_astro_type_script_index_0_lang.DBDaBdws.js"></script> </body></html>
