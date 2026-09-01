@@ -1,0 +1,477 @@
+<!DOCTYPE html><!--
+  The per-post accent MUST ride on an inline style attribute here. A `<style>:root{...}</style>`
+  block in head loses the cascade to global.css (same specificity, and Astro's stylesheet link
+  lands later), which silently left every page on the default accent.
+--><html lang="en" style="--accent:#0F8B84;"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>streaming notes: async def, threadpools, and bridging a synchronous pipeline into SSE — xianyunshi</title><meta name="description" content="a question answering service sat on a blank spinner for a minute or more per query, and the fix went through four changes that were all really about one seam between synchronous work and an async framework"><link rel="alternate" type="application/rss+xml" title="xianyunshi" href="/xianyunshi/rss.xml"><link rel="icon" href="/xianyunshi/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/xianyunshi/favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="/xianyunshi/favicon-16.png"><link rel="apple-touch-icon" href="/xianyunshi/apple-touch-icon.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400;1,6..72,600&family=Inter:wght@400;500&display=swap"><link rel="stylesheet" href="/xianyunshi/_astro/BaseLayout.C9kYIoYU.css"><style>.plate[data-astro-cid-j5yaa2ez]{position:relative;margin:1.5rem auto 2rem;width:min(var(--pw),100%);padding:0}.plate-halo[data-astro-cid-j5yaa2ez]{position:absolute;inset:-20px -24px -28px;background-image:radial-gradient(circle at 22% 30%,rgba(64,108,152,.3) 1.1px,transparent 1.8px),radial-gradient(circle at 71% 62%,rgba(64,108,152,.24) .9px,transparent 1.6px),radial-gradient(circle at 48% 84%,rgba(168,136,106,.22) .9px,transparent 1.6px),radial-gradient(circle at 86% 18%,rgba(64,108,152,.2) .8px,transparent 1.5px);background-size:46px 46px,37px 41px,46px 46px,37px 41px;-webkit-mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,transparent 42%,#000 100%);mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,transparent 42%,#000 100%);pointer-events:none}.plate-frame[data-astro-cid-j5yaa2ez]{position:relative;overflow:hidden;border-radius:3px}.plate[data-astro-cid-j5yaa2ez] img[data-astro-cid-j5yaa2ez]{display:block;width:100%;height:auto;opacity:var(--pop);mix-blend-mode:var(--pbl);transform:scale(1);transition:transform .62s cubic-bezier(.2,.7,.2,1);will-change:transform;-webkit-mask-image:radial-gradient(ellipse 84% 88% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 84% 88% at 50% 50%,#000 52%,transparent 100%)}.plate-veil[data-astro-cid-j5yaa2ez]{position:absolute;inset:0;background:linear-gradient(168deg,rgba(251,250,246,calc(var(--pveil) * .5)),rgba(251,250,246,var(--pveil)) 55%,rgba(251,250,246,calc(var(--pveil) * 1.5)));opacity:1;transition:opacity .62s ease;pointer-events:none}.plate[data-astro-cid-j5yaa2ez]:hover img[data-astro-cid-j5yaa2ez]{transform:scale(1.035)}.plate[data-astro-cid-j5yaa2ez]:hover .plate-veil[data-astro-cid-j5yaa2ez]{opacity:0}.plate[data-astro-cid-j5yaa2ez].band{width:min(46rem,100%);margin:1rem auto 1.9rem}.plate[data-astro-cid-j5yaa2ez].band img[data-astro-cid-j5yaa2ez]{aspect-ratio:21 / 8;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 94% 104% at 50% 34%,#000 56%,transparent 100%);mask-image:radial-gradient(ellipse 94% 104% at 50% 34%,#000 56%,transparent 100%)}figcaption[data-astro-cid-j5yaa2ez]{position:relative;margin-top:.55rem;text-align:right;font-family:var(--sans);font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}@media(max-width:700px){.plate-halo[data-astro-cid-j5yaa2ez]{inset:-14px 0 -18px}}@media(prefers-reduced-motion:reduce){.plate[data-astro-cid-j5yaa2ez] img[data-astro-cid-j5yaa2ez],.plate-veil[data-astro-cid-j5yaa2ez]{transition:none}.plate[data-astro-cid-j5yaa2ez]:hover img[data-astro-cid-j5yaa2ez]{transform:scale(1)}}
+.topics[data-astro-cid-gjtny2mx]{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .75rem;margin:-.4rem 0 1.5rem}.topics-label[data-astro-cid-gjtny2mx]{font-family:var(--sans);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);flex:none}.topics[data-astro-cid-gjtny2mx] ul[data-astro-cid-gjtny2mx]{display:flex;flex-wrap:wrap;gap:.34rem .4rem;list-style:none;margin:0;padding:0}.topics[data-astro-cid-gjtny2mx] li[data-astro-cid-gjtny2mx]{font-family:var(--sans);font-size:.7rem;line-height:1.35;letter-spacing:.015em;color:color-mix(in srgb,var(--accent) 78%,var(--ink-body));background:color-mix(in srgb,var(--accent) 6%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:3px;padding:.14rem .44rem;white-space:nowrap}@media(max-width:520px){.topics[data-astro-cid-gjtny2mx] li[data-astro-cid-gjtny2mx]{white-space:normal}}
+</style></head> <body> <div class="wallpaper" style="background-image:url(/xianyunshi/art/inspiration.jpg)" aria-hidden="true"></div> <div class="starfield" aria-hidden="true"></div> <header class="masthead"> <a class="wordmark" href="/xianyunshi/">xianyun<span>shi</span></a> <nav class="nav"> <a href="/xianyunshi/">notes</a> <a href="/xianyunshi/about">about</a> <a href="/xianyunshi/rss.xml">rss</a> </nav> </header> <main>  <div class="sheet reading" data-astro-cid-gjtny2mx> <figure class="plate band" style="--pw:440px; --pop:0.95; --pbl:normal; --pveil:0.26;" data-astro-cid-j5yaa2ez> <div class="plate-halo" aria-hidden="true" data-astro-cid-j5yaa2ez></div> <div class="plate-frame" data-astro-cid-j5yaa2ez> <img src="/xianyunshi/art/inspiration.jpg" alt width="440" loading="lazy" decoding="async" data-astro-cid-j5yaa2ez> <div class="plate-veil" aria-hidden="true" data-astro-cid-j5yaa2ez></div> </div>  </figure> <article class="wrap" data-astro-cid-gjtny2mx> <div class="meta" data-astro-cid-gjtny2mx> <span class="dateline" data-astro-cid-gjtny2mx> 6 Aug 2026  </span>  </div> <h1 data-astro-cid-gjtny2mx>streaming notes: async def, threadpools, and bridging a synchronous pipeline into SSE</h1> <p class="standfirst" data-astro-cid-gjtny2mx>a question answering service sat on a blank spinner for a minute or more per query, and the fix went through four changes that were all really about one seam between synchronous work and an async framework</p>  <div class="topics" data-astro-cid-gjtny2mx> <span class="topics-label" data-astro-cid-gjtny2mx>topics</span> <ul data-astro-cid-gjtny2mx> <li data-astro-cid-gjtny2mx>event loop versus threadpool</li><li data-astro-cid-gjtny2mx>cooperative scheduling</li><li data-astro-cid-gjtny2mx>blocking calls inside coroutines</li><li data-astro-cid-gjtny2mx>server-sent events</li><li data-astro-cid-gjtny2mx>push callbacks versus pull generators</li><li data-astro-cid-gjtny2mx>queue as a thread bridge</li><li data-astro-cid-gjtny2mx>in-band terminal events</li><li data-astro-cid-gjtny2mx>streaming a non-idempotent text cleaner</li><li data-astro-cid-gjtny2mx>additive sibling functions</li><li data-astro-cid-gjtny2mx>read-modify-write log races</li> </ul> </div> <hr class="rule" data-astro-cid-gjtny2mx>  <ol>
+<li>A synchronous pipeline sat behind an <code>async def</code> handler and held the event loop for its
+entire run. One query in flight per container, ever.</li>
+<li>Deleting the word <code>async</code> made the server concurrent, because a plain <code>def</code> handler gets
+handed to a threadpool instead of the loop.</li>
+<li>Progress events fire from a callback deep in the call stack. A generator has to yield from
+the top. A single thread cannot do both.</li>
+<li>A queue and a background thread bridge the two, and the pipeline never learns it is being
+streamed.</li>
+<li>Tokens stream out raw and are then thrown away, because the text cleaner only works on a
+complete answer.</li>
+<li>Nothing got faster. The waiting stopped being blank, which turned out to be the part that
+mattered.</li>
+</ol>
+<p>The system behind this post answers questions over a large set of financial regulatory
+filings. A question goes through entity extraction, embedding, vector retrieval, a sentence
+expansion step, context assembly, and finally one call to a hosted language model that writes
+the answer. Simple questions took around ten seconds end to end. Comparison questions
+spanning several companies and years took a minute, and the worst measured case took close
+to four.</p>
+<p>For all of that time the interface showed a spinner and nothing else. The work was
+progressing perfectly and the screen had no way to say so.</p>
+<h2 id="the-seam-everything-else-sits-on">the seam everything else sits on</h2>
+<p>The pipeline is ordinary synchronous Python. It calls a cloud SDK, waits, parses, calls
+again. There is not a single <code>await</code> anywhere in it. The web framework in front of it is
+asynchronous. Every problem in this post lives at that join.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>      synchronous pipeline</span></span>
+<span class="line"><span>      blocking SDK calls, no await points</span></span>
+<span class="line"><span>                  |</span></span>
+<span class="line"><span>    ==============|==============  the seam</span></span>
+<span class="line"><span>                  |</span></span>
+<span class="line"><span>      async web framework</span></span>
+<span class="line"><span>      one event loop, cooperative switching</span></span></code></pre>
+<p>Four small changes were made across one afternoon, in an order that mattered.</p>
+<h2 id="what-async-actually-promises">what async actually promises</h2>
+<p>A server needs to serve many requests without one thread per request. There are two ways to
+get there.</p>
+<p>The first is to give the operating system the problem. Each request runs on its own thread,
+and the OS interrupts whichever thread it likes whenever it likes. Preemption is involuntary,
+so a thread that blocks on a network read hurts only itself.</p>
+<p>The second is an event loop. One thread runs a list of things that are ready to make
+progress, picks one, runs it until it says it is waiting on something, and moves to the next.
+The switching is cooperative, and <code>await</code> is the entire cooperation protocol. It means: this
+is going to take a while, hand the thread to something else, come back when the result lands.</p>
+<p>That protocol has one requirement, which is that every coroutine actually reaches an <code>await</code>.
+A coroutine containing none is a normal function wearing a keyword. It runs start to finish
+without offering the loop a single opportunity to do anything else.</p>
+<p>Which is what was happening.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>async def, one blocking call inside</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  event loop  [===== query, 9.6s+ =====]</span></span>
+<span class="line"><span>  /health         blocked ..........</span></span>
+<span class="line"><span>  query 2         blocked ..........</span></span></code></pre>
+<p>Three consequences followed, and the third is the one that mattered most.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">consequence</th><th style="text-align:left">effect</th></tr></thead><tbody><tr><td style="text-align:left">serialised queries</td><td style="text-align:left">a second request waits for the first to finish completely</td></tr><tr><td style="text-align:left">health checks blocked</td><td style="text-align:left">the platform’s own liveness probe queues behind a user</td></tr><tr><td style="text-align:left">streaming impossible</td><td style="text-align:left">flushing a chunk needs a free loop, and the loop is held</td></tr></tbody></table>
+<p>The fix was to delete four characters.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6A737D"># before</span></span>
+<span class="line"><span style="color:#6F42C1">@app.post</span><span style="color:#24292E">(</span><span style="color:#032F62">&quot;/query&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#D73A49">async</span><span style="color:#D73A49"> def</span><span style="color:#6F42C1"> query_endpoint</span><span style="color:#24292E">(request: QueryRequest):</span></span>
+<span class="line"><span style="color:#D73A49">    return</span><span style="color:#24292E"> answer_query(request.question)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D"># after</span></span>
+<span class="line"><span style="color:#6F42C1">@app.post</span><span style="color:#24292E">(</span><span style="color:#032F62">&quot;/query&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> query_endpoint</span><span style="color:#24292E">(request: QueryRequest):</span></span>
+<span class="line"><span style="color:#D73A49">    return</span><span style="color:#24292E"> answer_query(request.question)</span></span></code></pre>
+<p>Frameworks in this family inspect the handler’s declaration and route it accordingly. A
+coroutine is trusted to yield and is run directly on the loop. A plain function is assumed to
+block and is handed to a threadpool, where the operating system can preempt it. Declaring the
+handler synchronous describes what it actually does, which lets the framework schedule it
+correctly.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">handler</th><th style="text-align:left">runs on</th><th style="text-align:left">holds the loop</th></tr></thead><tbody><tr><td style="text-align:left"><code>async def</code> with real <code>await</code> points</td><td style="text-align:left">event loop</td><td style="text-align:left">no, yields at each one</td></tr><tr><td style="text-align:left"><code>async def</code> with no <code>await</code> points</td><td style="text-align:left">event loop</td><td style="text-align:left">yes, for the whole call</td></tr><tr><td style="text-align:left">plain <code>def</code></td><td style="text-align:left">threadpool</td><td style="text-align:left">no, the OS preempts it</td></tr></tbody></table>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>plain def, handed to a pool</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  event loop  ..free.. ..free.. ..free..</span></span>
+<span class="line"><span>  worker 1    [==== query 1, 9.12s ====]</span></span>
+<span class="line"><span>  worker 2    [==== query 2, 9.66s ====]</span></span>
+<span class="line"><span>  /health       ^2ms    ^9ms    ^1ms</span></span></code></pre>
+<p>Measured against the running service: while one real query was in flight for 10.14 seconds,
+three health probes returned 200 in 1.5 to 9.6 milliseconds. Two real queries fired at the
+same time finished at 9.12 and 9.66 seconds, overlapping almost entirely rather than adding
+up to eighteen.</p>
+<h3 id="concurrency-that-arrives-is-concurrency-that-has-to-be-handled">concurrency that arrives is concurrency that has to be handled</h3>
+<p>An earlier change in the same sequence had started caching the component graph. Building it
+per request cost 1164.7 milliseconds of constructors and table loads that were discarded when
+the request returned, so it moved to a process-wide cache. Second and third calls measured
+0.0 milliseconds.</p>
+<p>That cache had a consequence nobody was looking for. The query logger became a single shared
+instance, and its append is a download, modify, and reupload against object storage with no
+lock and no conditional write. Two concurrent appends would read the same object, and one
+would overwrite the other’s row.</p>
+<p>The race was unreachable while the event loop serialised everything. Freeing the loop made it
+reachable. A lock went around the five logging call sites before the hazard went live rather
+than after, and the concurrency test above confirmed it held: two simultaneous queries, two
+rows, written 161 milliseconds apart, nothing lost.</p>
+<h2 id="the-callback-that-cannot-yield">the callback that cannot yield</h2>
+<p>Timing instrumentation already existed inside the pipeline, recording durations at six points.
+Turning those into events needed an optional callback, defaulted to <code>None</code> so that every
+existing caller kept byte-identical behaviour.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> run_retrieval</span><span style="color:#24292E">(query, components, on_progress</span><span style="color:#D73A49">=</span><span style="color:#005CC5">None</span><span style="color:#24292E">):</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    def</span><span style="color:#6F42C1"> emit</span><span style="color:#24292E">(stage, </span><span style="color:#D73A49">**</span><span style="color:#24292E">detail):</span></span>
+<span class="line"><span style="color:#D73A49">        if</span><span style="color:#24292E"> on_progress </span><span style="color:#D73A49">is</span><span style="color:#D73A49"> not</span><span style="color:#005CC5"> None</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">            on_progress(stage, detail)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">    t0 </span><span style="color:#D73A49">=</span><span style="color:#24292E"> now()</span></span>
+<span class="line"><span style="color:#24292E">    entities </span><span style="color:#D73A49">=</span><span style="color:#24292E"> extract_entities(query)</span></span>
+<span class="line"><span style="color:#24292E">    emit(</span><span style="color:#032F62">&quot;entities&quot;</span><span style="color:#24292E">, </span><span style="color:#E36209">ms</span><span style="color:#D73A49">=</span><span style="color:#24292E">elapsed(t0), </span><span style="color:#E36209">companies</span><span style="color:#D73A49">=</span><span style="color:#24292E">entities.companies)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">    t0 </span><span style="color:#D73A49">=</span><span style="color:#24292E"> now()</span></span>
+<span class="line"><span style="color:#24292E">    hits </span><span style="color:#D73A49">=</span><span style="color:#24292E"> retrieve(embedding, filters)</span></span>
+<span class="line"><span style="color:#24292E">    emit(</span><span style="color:#032F62">&quot;retrieve&quot;</span><span style="color:#24292E">, </span><span style="color:#E36209">ms</span><span style="color:#D73A49">=</span><span style="color:#24292E">elapsed(t0), </span><span style="color:#E36209">n_hits</span><span style="color:#D73A49">=</span><span style="color:#005CC5">len</span><span style="color:#24292E">(hits))</span></span></code></pre>
+<p>Six added lines and a helper. No control flow changed.</p>
+<p>Then the actual problem appears. That callback fires four levels down a call stack, and it
+fires by calling. A generator produces values by yielding, and it yields from the top. These
+are opposite directions, and one call stack cannot run in both at once.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>  the pipeline pushes:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    retrieve()  --calls--&gt;  on_progress(...)</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  the generator pulls:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    caller  --asks--&gt;  yield</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  one thread, one stack, cannot do both</span></span></code></pre>
+<p>Waiting for the pipeline to finish and then replaying the events defeats the purpose, since
+they exist to be seen while the work is still running.</p>
+<p>The bridge is a queue and a second thread. The pipeline runs on the worker, the callback
+writes into the queue, and the generator sits in the calling thread draining it.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> answer_query_stream</span><span style="color:#24292E">(query):</span></span>
+<span class="line"><span style="color:#24292E">    events </span><span style="color:#D73A49">=</span><span style="color:#24292E"> Queue()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    def</span><span style="color:#6F42C1"> on_progress</span><span style="color:#24292E">(stage, detail):</span></span>
+<span class="line"><span style="color:#D73A49">        try</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">            events.put({</span><span style="color:#032F62">&quot;type&quot;</span><span style="color:#24292E">: </span><span style="color:#032F62">&quot;stage&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;stage&quot;</span><span style="color:#24292E">: stage, </span><span style="color:#D73A49">**</span><span style="color:#24292E">detail})</span></span>
+<span class="line"><span style="color:#D73A49">        except</span><span style="color:#005CC5"> Exception</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">            log.error(</span><span style="color:#032F62">&quot;progress bridge failed, non-fatal&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    def</span><span style="color:#6F42C1"> worker</span><span style="color:#24292E">():</span></span>
+<span class="line"><span style="color:#24292E">        context </span><span style="color:#D73A49">=</span><span style="color:#24292E"> build_context(query, </span><span style="color:#E36209">on_progress</span><span style="color:#D73A49">=</span><span style="color:#24292E">on_progress)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">        for</span><span style="color:#24292E"> kind, payload </span><span style="color:#D73A49">in</span><span style="color:#24292E"> llm.invoke_stream(context):</span></span>
+<span class="line"><span style="color:#D73A49">            if</span><span style="color:#24292E"> kind </span><span style="color:#D73A49">==</span><span style="color:#032F62"> &quot;text&quot;</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">                events.put({</span><span style="color:#032F62">&quot;type&quot;</span><span style="color:#24292E">: </span><span style="color:#032F62">&quot;token&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;text&quot;</span><span style="color:#24292E">: payload})</span></span>
+<span class="line"><span style="color:#D73A49">            elif</span><span style="color:#24292E"> kind </span><span style="color:#D73A49">==</span><span style="color:#032F62"> &quot;final&quot;</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">                result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> package(payload)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">        with</span><span style="color:#005CC5"> LOG_LOCK</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">            logger.log_query(result)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">        events.put({</span><span style="color:#032F62">&quot;type&quot;</span><span style="color:#24292E">: </span><span style="color:#032F62">&quot;replace&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;text&quot;</span><span style="color:#24292E">: result[</span><span style="color:#032F62">&quot;answer&quot;</span><span style="color:#24292E">]})</span></span>
+<span class="line"><span style="color:#24292E">        events.put({</span><span style="color:#032F62">&quot;type&quot;</span><span style="color:#24292E">: </span><span style="color:#032F62">&quot;done&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;metadata&quot;</span><span style="color:#24292E">: result[</span><span style="color:#032F62">&quot;metadata&quot;</span><span style="color:#24292E">]})</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">    thread </span><span style="color:#D73A49">=</span><span style="color:#24292E"> Thread(</span><span style="color:#E36209">target</span><span style="color:#D73A49">=</span><span style="color:#24292E">worker, </span><span style="color:#E36209">daemon</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    thread.start()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    try</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#D73A49">        while</span><span style="color:#005CC5"> True</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">            item </span><span style="color:#D73A49">=</span><span style="color:#24292E"> events.get()</span></span>
+<span class="line"><span style="color:#D73A49">            yield</span><span style="color:#24292E"> item</span></span>
+<span class="line"><span style="color:#D73A49">            if</span><span style="color:#24292E"> item[</span><span style="color:#032F62">&quot;type&quot;</span><span style="color:#24292E">] </span><span style="color:#D73A49">in</span><span style="color:#24292E"> (</span><span style="color:#032F62">&quot;error&quot;</span><span style="color:#24292E">, </span><span style="color:#032F62">&quot;done&quot;</span><span style="color:#24292E">):</span></span>
+<span class="line"><span style="color:#D73A49">                break</span></span>
+<span class="line"><span style="color:#D73A49">    finally</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">        thread.join(</span><span style="color:#E36209">timeout</span><span style="color:#D73A49">=</span><span style="color:#005CC5">5.0</span><span style="color:#24292E">)</span></span></code></pre>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>  worker thread          calling thread</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    pipeline</span></span>
+<span class="line"><span>       |  on_progress</span></span>
+<span class="line"><span>       v</span></span>
+<span class="line"><span>    queue.put()  -------&gt;  queue.get()</span></span>
+<span class="line"><span>                              |</span></span>
+<span class="line"><span>                              v</span></span>
+<span class="line"><span>                            yield</span></span></code></pre>
+<p>Two details in that shape are worth pulling out.</p>
+<p>The loop has no sentinel value and no liveness check. It stops on the content of an ordinary
+event, whichever one carries a <code>type</code> of <code>done</code> or <code>error</code>. The terminator travels in band,
+in the same channel and the same format as the payload, which means the protocol has exactly
+one kind of thing in it.</p>
+<p>The guard around <code>events.put</code> exists because the callback runs inside retrieval. A formatting
+mistake in the reporting layer would otherwise propagate up and take down the query it was
+reporting on. The guard was written down as a requirement before any consuming code existed,
+so that a bug in the reporting could never reach the work being reported.</p>
+<h2 id="the-four-layers-end-to-end">the four layers, end to end</h2>
+<p>Once events exist, the rest is transport. Four layers, each one thin.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>orchestrator    worker thread, queue, generator</span></span>
+<span class="line"><span>     |          yields plain dicts</span></span>
+<span class="line"><span>     v</span></span>
+<span class="line"><span>streaming route</span></span>
+<span class="line"><span>     |          data: {json}\n\n</span></span>
+<span class="line"><span>     v          media type text/event-stream</span></span>
+<span class="line"><span>http client</span></span>
+<span class="line"><span>     |          stream=True, iterate lines</span></span>
+<span class="line"><span>     v          parse back into dicts</span></span>
+<span class="line"><span>interface       status label, growing text</span></span></code></pre>
+<p>The route wraps each dict in the server-sent events framing and hands the generator to a
+streaming response.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6F42C1">@app.post</span><span style="color:#24292E">(</span><span style="color:#032F62">&quot;/query/stream&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> query_stream_endpoint</span><span style="color:#24292E">(request):</span></span>
+<span class="line"><span style="color:#D73A49">    def</span><span style="color:#6F42C1"> event_source</span><span style="color:#24292E">():</span></span>
+<span class="line"><span style="color:#D73A49">        for</span><span style="color:#24292E"> event </span><span style="color:#D73A49">in</span><span style="color:#24292E"> answer_query_stream(request.question):</span></span>
+<span class="line"><span style="color:#D73A49">            yield</span><span style="color:#D73A49"> f</span><span style="color:#032F62">&quot;data: </span><span style="color:#005CC5">{</span><span style="color:#24292E">json.dumps(event)</span><span style="color:#005CC5">}\n\n</span><span style="color:#032F62">&quot;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    return</span><span style="color:#24292E"> StreamingResponse(event_source(),</span></span>
+<span class="line"><span style="color:#E36209">                             media_type</span><span style="color:#D73A49">=</span><span style="color:#032F62">&quot;text/event-stream&quot;</span><span style="color:#24292E">)</span></span></code></pre>
+<p>The client reverses it, and <code>stream=True</code> is the load-bearing argument. Without it the HTTP
+library collects the whole body before returning anything, and the stream becomes a slow way
+to send one message.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> query_stream</span><span style="color:#24292E">(self, question):</span></span>
+<span class="line"><span style="color:#24292E">    response </span><span style="color:#D73A49">=</span><span style="color:#24292E"> requests.post(url, </span><span style="color:#E36209">json</span><span style="color:#D73A49">=</span><span style="color:#24292E">payload, </span><span style="color:#E36209">stream</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#D73A49">    for</span><span style="color:#24292E"> line </span><span style="color:#D73A49">in</span><span style="color:#24292E"> response.iter_lines(</span><span style="color:#E36209">decode_unicode</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">):</span></span>
+<span class="line"><span style="color:#D73A49">        if</span><span style="color:#D73A49"> not</span><span style="color:#24292E"> line </span><span style="color:#D73A49">or</span><span style="color:#D73A49"> not</span><span style="color:#24292E"> line.startswith(</span><span style="color:#032F62">&quot;data: &quot;</span><span style="color:#24292E">):</span></span>
+<span class="line"><span style="color:#D73A49">            continue</span></span>
+<span class="line"><span style="color:#D73A49">        yield</span><span style="color:#24292E"> json.loads(line[</span><span style="color:#005CC5">len</span><span style="color:#24292E">(</span><span style="color:#032F62">&quot;data: &quot;</span><span style="color:#24292E">):])</span></span></code></pre>
+<p>The interface drives two widgets from one loop.</p>
+<pre class="astro-code github-light" style="background-color:#fff;color:#24292e;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#24292E">status </span><span style="color:#D73A49">=</span><span style="color:#24292E"> st.status(</span><span style="color:#032F62">&quot;Starting...&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">placeholder </span><span style="color:#D73A49">=</span><span style="color:#24292E"> st.empty()</span></span>
+<span class="line"><span style="color:#24292E">text </span><span style="color:#D73A49">=</span><span style="color:#032F62"> &quot;&quot;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">for</span><span style="color:#24292E"> event </span><span style="color:#D73A49">in</span><span style="color:#24292E"> client.query_stream(question):</span></span>
+<span class="line"><span style="color:#24292E">    kind </span><span style="color:#D73A49">=</span><span style="color:#24292E"> event[</span><span style="color:#032F62">&quot;type&quot;</span><span style="color:#24292E">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    if</span><span style="color:#24292E"> kind </span><span style="color:#D73A49">==</span><span style="color:#032F62"> &quot;stage&quot;</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">        label </span><span style="color:#D73A49">=</span><span style="color:#D73A49"> f</span><span style="color:#032F62">&quot;</span><span style="color:#005CC5">{</span><span style="color:#24292E">event[</span><span style="color:#032F62">&#39;stage&#39;</span><span style="color:#24292E">]</span><span style="color:#005CC5">}</span><span style="color:#032F62"> (</span><span style="color:#005CC5">{</span><span style="color:#24292E">event[</span><span style="color:#032F62">&#39;ms&#39;</span><span style="color:#24292E">]</span><span style="color:#D73A49">:.0f</span><span style="color:#005CC5">}</span><span style="color:#032F62"> ms)&quot;</span></span>
+<span class="line"><span style="color:#24292E">        status.update(</span><span style="color:#E36209">label</span><span style="color:#D73A49">=</span><span style="color:#24292E">label)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    elif</span><span style="color:#24292E"> kind </span><span style="color:#D73A49">==</span><span style="color:#032F62"> &quot;token&quot;</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">        text </span><span style="color:#D73A49">+=</span><span style="color:#24292E"> event[</span><span style="color:#032F62">&quot;text&quot;</span><span style="color:#24292E">]</span></span>
+<span class="line"><span style="color:#24292E">        placeholder.markdown(text </span><span style="color:#D73A49">+</span><span style="color:#032F62"> &quot; |&quot;</span><span style="color:#24292E">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    elif</span><span style="color:#24292E"> kind </span><span style="color:#D73A49">==</span><span style="color:#032F62"> &quot;replace&quot;</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">        text </span><span style="color:#D73A49">=</span><span style="color:#24292E"> event[</span><span style="color:#032F62">&quot;text&quot;</span><span style="color:#24292E">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">    elif</span><span style="color:#24292E"> kind </span><span style="color:#D73A49">==</span><span style="color:#032F62"> &quot;done&quot;</span><span style="color:#24292E">:</span></span>
+<span class="line"><span style="color:#24292E">        metadata </span><span style="color:#D73A49">=</span><span style="color:#24292E"> event[</span><span style="color:#032F62">&quot;metadata&quot;</span><span style="color:#24292E">]</span></span>
+<span class="line"><span style="color:#24292E">        status.update(</span><span style="color:#E36209">label</span><span style="color:#D73A49">=</span><span style="color:#032F62">&quot;Done&quot;</span><span style="color:#24292E">, </span><span style="color:#E36209">state</span><span style="color:#D73A49">=</span><span style="color:#032F62">&quot;complete&quot;</span><span style="color:#24292E">)</span></span></code></pre>
+<p>Five stage names reach the screen in practice. Measured on one real question:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">stage</th><th style="text-align:right">ms</th><th style="text-align:left">detail</th></tr></thead><tbody><tr><td style="text-align:left">entities</td><td style="text-align:right">8.6</td><td style="text-align:left">one company, one year</td></tr><tr><td style="text-align:left">embed</td><td style="text-align:right">339.9</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">retrieve</td><td style="text-align:right">3202.2</td><td style="text-align:left">30 hits, 3 query variants</td></tr><tr><td style="text-align:left">expand</td><td style="text-align:right">59.5</td><td style="text-align:left">158 sentences</td></tr><tr><td style="text-align:left">assemble</td><td style="text-align:right">3.5</td><td style="text-align:left">32,001 characters</td></tr></tbody></table>
+<p>The instrumented call ran 3613.9 milliseconds against 3379.3 for the same work with no
+callback attached, which is the same order of magnitude and no measurable overhead.</p>
+<p>One piece of correctness in the framing happened by accident. Each event is serialised to JSON
+and only then wrapped in the line-oriented envelope. A token containing a
+newline is therefore escaped inside the JSON string and cannot break the parser at the far
+end. Encoding before framing rather than framing before encoding is the only reason a naive
+line reader works here at all.</p>
+<p>And one measurement that had to be taken rather than assumed. Application servers are allowed
+to buffer a response until it completes, which would produce something that looks like
+streaming code and behaves like the old blocking endpoint. Against a rebuilt container, time
+to first byte was 0.004343 seconds against a total of 8.959013 seconds. A buffering server
+would have made those two numbers equal.</p>
+<h2 id="the-streamed-text-gets-discarded-at-the-end">the streamed text gets discarded at the end</h2>
+<p>The finished text passes through a cleaner before anyone sees it. The cleaner is one
+substitution that escapes literal dollar signs, so that an answer quoting several figures does
+not get read as mathematical notation by the markdown renderer and collapsed into symbols.</p>
+<p>That cleaner runs on the complete text. It cannot run on a fragment, because a chunk boundary
+can land between a backslash and the character it escapes.</p>
+<p>Three options were weighed before any streaming code existed.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">option</th><th style="text-align:left">outcome</th></tr></thead><tbody><tr><td style="text-align:left">stream raw, then send one cleaned replacement</td><td style="text-align:left">chosen; costs a re-render at the end</td></tr><tr><td style="text-align:left">buffer to newlines and clean each flush</td><td style="text-align:left">rejected; the cleaner is not chunk-safe</td></tr><tr><td style="text-align:left">clean only the copy that gets logged</td><td style="text-align:left">rejected; shown text and logged text would differ</td></tr></tbody></table>
+<p>The first option shipped. Tokens arrive raw and get painted immediately, then a single
+<code>replace</code> event carries the cleaned full answer and the accumulated string is discarded.</p>
+<p>A second requirement points the same way. The final answer ends with a citation block that
+the interface parses into source chips. That block is the last thing the model emits, so any
+attempt to parse it mid-stream finds nothing. Calling the renderer once on complete text
+produces the same result as calling it repeatedly, without the flicker.</p>
+<p>The predicted cost turned out cheaper than the design expected. Answers about company finances
+contain dollar amounts essentially always, so the cleaned string is almost never byte-equal to
+the raw one, and <code>replace</code> genuinely replaces something on nearly every query. An escaped
+dollar sign and a bare one render identically, so the swap changes the string and leaves the
+rendered page alone.</p>
+<p>Worth stating plainly, since it was never measured: whether that swap is perceptible to
+someone watching was not tested. The event fires exactly once, and that is the whole of what
+is known about it.</p>
+<h2 id="add-a-sibling-never-modify">add a sibling, never modify</h2>
+<p>There is one pattern underneath all four changes, and it is visible five times.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">existing</th><th style="text-align:left">added beside it</th></tr></thead><tbody><tr><td style="text-align:left"><code>invoke()</code></td><td style="text-align:left"><code>invoke_stream()</code></td></tr><tr><td style="text-align:left"><code>answer_query()</code></td><td style="text-align:left"><code>answer_query_stream()</code></td></tr><tr><td style="text-align:left"><code>POST /query</code></td><td style="text-align:left"><code>POST /query/stream</code></td></tr><tr><td style="text-align:left"><code>client.query()</code></td><td style="text-align:left"><code>client.query_stream()</code></td></tr><tr><td style="text-align:left">retrieval with no callback</td><td style="text-align:left">the same function, <code>on_progress=None</code></td></tr></tbody></table>
+<p>Nothing on the working path was edited. A command line entry point, a batch evaluation
+harness, and a set of notebooks all call the original functions and were incapable of
+noticing that any of this happened. The callback default carries the same guarantee in a
+smaller space: absent an argument, the code path is identical.</p>
+<p>The streaming function reuses the cached component getters and the logging lock, and its final
+event is deliberately shaped like the non-streaming return value so that response packaging
+and cost accounting did not need a second implementation.</p>
+<p>The discipline has a real cost. The two orchestrator functions share no
+body, so roughly a hundred lines of error handling exist twice, and they have already drifted.
+The streaming copy wraps its error-path logging in a guard that the original still lacks, so
+the fork is more careful than its parent. In the other direction the streaming path quietly
+drops a field of file paths that the original attaches to its result. A duplicated fork drifts.
+That is the price, and it bought the ability to add a feature to a finished system without a
+regression story.</p>
+<h2 id="what-the-four-changes-add-up-to">what the four changes add up to</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:left">change</th><th style="text-align:left">what it did</th><th style="text-align:left">what it unlocked</th></tr></thead><tbody><tr><td style="text-align:left">cache the component graph</td><td style="text-align:left">1164.7 ms cold, 0.0 ms warm</td><td style="text-align:left">one shared logger, and a race to lock</td></tr><tr><td style="text-align:left"><code>async def</code> to <code>def</code></td><td style="text-align:left">handler moved to the threadpool</td><td style="text-align:left">real concurrency, and flushing at all</td></tr><tr><td style="text-align:left">optional progress callback</td><td style="text-align:left">six emit lines, default <code>None</code></td><td style="text-align:left">something to stream</td></tr><tr><td style="text-align:left">queue bridge and SSE route</td><td style="text-align:left">worker thread, in-band terminator</td><td style="text-align:left">the events reach a screen</td></tr></tbody></table>
+<p>Read downward, each row is a precondition for the one below it. Streaming had been waiting on
+a free event loop, and the loop was held by a keyword promising a cooperation that the code
+underneath never performed.</p>
+<h2 id="what-actually-changed-and-what-did-not">what actually changed, and what did not</h2>
+<p>Total time did not move. A query that took nine seconds still takes nine seconds, and the
+comparison questions still take a minute. Nothing in the pipeline was made faster and no work
+was removed from it.</p>
+<p>What changed is that the minute stopped being blank. The stage labels appear within a few
+milliseconds of submission and update as the pipeline advances, and the answer builds on screen
+a token at a time instead of appearing in one piece. The system was deployed to Fargate in
+this state and demonstrated
+there, which is the test that matters for a change whose whole purpose is how the waiting
+feels.</p>
+<p>Three limits are worth carrying away. Time to first token was never measured on a full-length
+answer, and the only recorded figure came from a probe capped at twenty tokens where the whole
+response arrived in a single chunk, making it useless for the purpose. The hosted model’s own
+stream carries a server-side first-byte latency metric in its final event, which was noticed
+and left unused as out of scope, so the one number that would settle it was in hand the whole
+time. And a client that disconnects mid-answer stops the generator but not the worker, which
+runs the pipeline to completion and pays for the model call that nobody will read.</p>
+  </article> </div>   </main> <footer class="foot"> <span>xianyunshi &middot; 2026</span> <span>art — gydw1n</span> </footer> <div id="mc-layer" aria-hidden="true"></div>   <script type="module" src="/xianyunshi/_astro/MagicCircle.astro_astro_type_script_index_0_lang.DBDaBdws.js"></script> </body></html>
